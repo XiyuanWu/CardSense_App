@@ -11,7 +11,6 @@ Many Americans face numerous financial challenges under certain circumstances, p
 
 [CardSense Figma File](https://www.figma.com/design/K9IXjc8XGfccyxJeDOZu4M/CardSense?node-id=0-1&t=55n2MlwcTevTLtUv-1)
 
-<!-- ff -->
 
 ## Installation/Usage
 
@@ -24,7 +23,7 @@ To run this project on your local PC:
 
 ### Clone the Repository
 ```
-git clone https://github.com/btaquee/CardSense.git
+git clone https://github.com/XiyuanWu/CardSense_App.git
 ```
 
 ### Install dependencies
@@ -50,8 +49,8 @@ pip install django-multiselectfield
 **React**
 
 ```
-# Switch to `web` folder
-cd web
+# Switch to `app` folder
+cd app
 
 # Install React dependencies
 npm install
@@ -78,7 +77,7 @@ python manage.py runserver
 
 Common Mistake: Make sure you run commands from the correct directory:
 - Django commands: Run from `CardSense/` (project root)
-- React commands: Run from `CardSense/web/` (web folder)
+- React commands: Run from `CardSense/app/` (app folder)
 
 ## Project Structure
 
@@ -95,26 +94,10 @@ CardSense/
 ├─ cards/                 # Django APP: card products and reward rules
 ├─ optimizer/             # Django APP: best-card recommendation engine (service endpoints)
 │
-├─ web/                   # React web app (the UI)
+├─ app/                   # React Native app (the UI)
 │
 ├─ venv/                  # Python virtual environment (local only; not shared)
 ├─ db.sqlite3             # Dev database (local)
 ├─ manage.py              # Django CLI helper (runserver, migrate, etc.)
 └─ README.md              # Project overview & quickstart
 ```
-
-## Other Resource
-
-Primarily for developers' purposes, but it contains many helpful resources that help you understand this project more, or even build on it.
-
-1. [Complete Beginner's Guide](./resource/Beginner%20Guide.md)
-2. [Project Summary](./resource/Project%20Summary.md)
-3. [Set Up Guide](./resource/Set%20Up%20Guide.md)
-4. [Diagram](./resource/diagrams/)
-
-Some frontend resource:
-
-5. [Authentication Setup Guide](./resource/frontend/Authentication%20Setup%20Guide.md)
-6. [Backend Integration Guide](./resource/frontend/Backend%20Integration%20Guide.md)
-7. [CardSense Frontend](./resource/frontend/CardSense%20Frontend.md)
-8. [Frontend Changes Summary](./resource/frontend/Frontend%20Changes%20Summary.md)
