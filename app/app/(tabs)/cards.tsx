@@ -1,2 +1,1 @@
-export { default } from '../../screen/cards/cardsPage';
-
+export { default } from "../../screen/cards/cardsPage";

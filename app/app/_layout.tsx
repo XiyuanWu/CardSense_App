@@ -1,12 +1,11 @@
-import { Stack } from 'expo-router';
-import 'react-native-reanimated';
+import { Stack } from "expo-router";
+import "react-native-reanimated";
 
 export const unstable_settings = {
-  anchor: '(auth)',
+  anchor: "(auth)",
 };
 
 export default function RootLayout() {
-
   return (
     <Stack>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />

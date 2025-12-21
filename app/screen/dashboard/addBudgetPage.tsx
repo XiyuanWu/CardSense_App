@@ -1,19 +1,19 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState } from 'react';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import TextInputFull from '../../components/textInput/textInputFull';
-import ButtonHalf from '../../components/button/buttonHalf';
+import { View, Text, StyleSheet, Pressable } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useState } from "react";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import TextInputFull from "../../components/textInput/textInputFull";
+import ButtonHalf from "../../components/button/buttonHalf";
 
 export default function AddBudgetPage() {
   const router = useRouter();
-  const [monthYear, setMonthYear] = useState('');
-  const [budgetAmount, setBudgetAmount] = useState('');
+  const [monthYear, setMonthYear] = useState("");
+  const [budgetAmount, setBudgetAmount] = useState("");
 
   const handleCancel = () => {
     // Navigate back to budgetPage
-    router.push('/(tabs)/budget');
+    router.push("/(tabs)/budget");
   };
 
   const handleAdd = async () => {
@@ -30,12 +30,12 @@ export default function AddBudgetPage() {
     //   const data = await response.json();
     //   return data;
     // };
-    
+
     // Placeholder: Call backend API
     // await addBudget();
-    
+
     // Navigate back to budgetPage after adding
-    router.push('/(tabs)/budget');
+    router.push("/(tabs)/budget");
   };
 
   return (
@@ -43,7 +43,10 @@ export default function AddBudgetPage() {
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Pressable style={styles.backButton} onPress={() => router.push('/(tabs)/budget')}>
+          <Pressable
+            style={styles.backButton}
+            onPress={() => router.push("/(tabs)/budget")}
+          >
             <Ionicons name="arrow-back" size={24} color="#000000" />
           </Pressable>
           <Text style={styles.title}>Add Budgets</Text>
@@ -79,16 +82,16 @@ export default function AddBudgetPage() {
           <View style={styles.buttonsContainer}>
             <ButtonHalf
               button1={{
-                color: '#FFFFFF',
-                text: 'Cancel',
-                border: '#E6EAEF',
-                textColor: '#222222',
+                color: "#FFFFFF",
+                text: "Cancel",
+                border: "#E6EAEF",
+                textColor: "#222222",
                 onPress: handleCancel,
               }}
               button2={{
-                color: '#5E17EB',
-                text: 'Add',
-                textColor: '#FFFFFF',
+                color: "#5E17EB",
+                text: "Add",
+                textColor: "#FFFFFF",
                 onPress: handleAdd,
               }}
             />
@@ -102,7 +105,7 @@ export default function AddBudgetPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   content: {
     flex: 1,
@@ -111,25 +114,25 @@ const styles = StyleSheet.create({
     paddingBottom: 80, // Space for nav bar
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 20,
   },
   backButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
+    justifyContent: "center",
+    alignItems: "flex-start",
   },
   backButtonPlaceholder: {
     width: 40,
   },
   title: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#222222',
-    textAlign: 'center',
+    fontWeight: "700",
+    color: "#222222",
+    textAlign: "center",
     flex: 1,
   },
   formGroup: {
@@ -137,8 +140,8 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#222222',
+    fontWeight: "600",
+    color: "#222222",
     marginLeft: 2, // Align with inputs (37px - 35px padding)
     marginBottom: 15, // Space from subtitle to first input
   },
@@ -156,4 +159,3 @@ const styles = StyleSheet.create({
     marginHorizontal: -15, // Cancel out ButtonHalf's marginHorizontal: 15 to align with inputs
   },
 });
-

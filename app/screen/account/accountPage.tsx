@@ -1,12 +1,12 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import ButtonFull from '@/components/button/buttonFull';
+import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import ButtonFull from "@/components/button/buttonFull";
 
 export default function AccountPage() {
-    const router = useRouter();
-    
+  const router = useRouter();
+
   // TODO: Replace with backend API call to get user name
   // const fetchUserName = async () => {
   //   const response = await fetch('/api/user/');
@@ -15,7 +15,7 @@ export default function AccountPage() {
   // };
 
   // Placeholder - will be replaced with actual user name from account
-  const userName = 'John';
+  const userName = "John";
 
   const handleLogOut = () => {
     // TODO: Replace with backend API call
@@ -27,26 +27,26 @@ export default function AccountPage() {
     // };
     // await logOut();
     // console.log('Log out');
-    router.push('/(auth)/welcome');
+    router.push("/(auth)/welcome");
   };
 
   const handleFeedback = () => {
     // Placeholder - not implemented
-    console.log('Feedback');
+    console.log("Feedback");
   };
 
   const handleShare = () => {
     // Placeholder - not implemented
-    console.log('Share with Friends');
+    console.log("Share with Friends");
   };
 
   const handleReview = () => {
     // Placeholder - not implemented
-    console.log('Leave a Review');
+    console.log("Leave a Review");
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
@@ -61,7 +61,9 @@ export default function AccountPage() {
           {/* Welcome Message Card */}
           <View style={styles.welcomeCard}>
             <Text style={styles.welcomeText}>Hello, {userName}!</Text>
-            <Text style={styles.welcomeSubtext}>Thanks for choosing CardSense.</Text>
+            <Text style={styles.welcomeSubtext}>
+              Thanks for choosing CardSense.
+            </Text>
           </View>
 
           {/* General Section */}
@@ -141,7 +143,7 @@ export default function AccountPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   content: {
     flex: 1,
@@ -150,14 +152,14 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 20,
   },
   title: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#222222',
-    textAlign: 'center',
+    fontWeight: "700",
+    color: "#222222",
+    textAlign: "center",
   },
   scrollView: {
     flex: 1,
@@ -166,70 +168,70 @@ const styles = StyleSheet.create({
     paddingBottom: 100, // Extra space for log out button
   },
   welcomeCard: {
-    backgroundColor: '#F5F7FA',
+    backgroundColor: "#F5F7FA",
     borderWidth: 1,
-    borderColor: '#E6EAEF',
+    borderColor: "#E6EAEF",
     borderRadius: 20,
     padding: 20,
     height: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 20,
   },
   welcomeText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#222222',
+    fontWeight: "600",
+    color: "#222222",
     marginBottom: 6,
-    textAlign: 'center',
+    textAlign: "center",
   },
   welcomeSubtext: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#222222',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#222222",
+    textAlign: "center",
   },
   section: {
     marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#222222',
+    fontWeight: "600",
+    color: "#222222",
     marginBottom: 6,
   },
   sectionContent: {
     gap: 6,
   },
   settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#F5F7FA',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#F5F7FA",
     borderWidth: 1,
-    borderColor: '#E6EAEF',
+    borderColor: "#E6EAEF",
     borderRadius: 20,
     height: 35,
     paddingHorizontal: 15,
   },
   settingLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#222222',
+    fontWeight: "600",
+    color: "#222222",
   },
   settingRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   settingValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#222222',
+    fontWeight: "600",
+    color: "#222222",
   },
   logOutContainer: {
-    position: 'absolute',
-    bottom: 110, 
+    position: "absolute",
+    bottom: 110,
     left: 0,
     right: 0,
     paddingHorizontal: 35,
@@ -238,4 +240,3 @@ const styles = StyleSheet.create({
     marginHorizontal: -15, // Cancel out ButtonFull's marginHorizontal: 15
   },
 });
-

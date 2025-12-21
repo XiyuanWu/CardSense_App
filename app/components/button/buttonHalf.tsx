@@ -1,4 +1,4 @@
-import { View, Pressable, Text, StyleSheet } from 'react-native';
+import { View, Pressable, Text, StyleSheet } from "react-native";
 
 interface ButtonConfig {
   text: string;
@@ -20,7 +20,7 @@ export default function ButtonHalf({ button1, button2 }: ButtonHalfProps) {
       <Pressable
         style={({ pressed }) => [
           styles.button,
-          { backgroundColor: button1.color || '#FFFFFF' },
+          { backgroundColor: button1.color || "#FFFFFF" },
           button1.border && { borderWidth: 1, borderColor: button1.border },
           button1.disabled && styles.buttonDisabled,
           pressed && styles.buttonPressed,
@@ -31,7 +31,7 @@ export default function ButtonHalf({ button1, button2 }: ButtonHalfProps) {
         <Text
           style={[
             styles.buttonText,
-            { color: button1.textColor || '#222222' },
+            { color: button1.textColor || "#222222" },
             button1.disabled && styles.textDisabled,
           ]}
         >
@@ -44,7 +44,7 @@ export default function ButtonHalf({ button1, button2 }: ButtonHalfProps) {
       <Pressable
         style={({ pressed }) => [
           styles.button,
-          { backgroundColor: button2.color || '#5E17EB' },
+          { backgroundColor: button2.color || "#5E17EB" },
           button2.border && { borderWidth: 1, borderColor: button2.border },
           button2.disabled && styles.buttonDisabled,
           pressed && styles.buttonPressed,
@@ -55,7 +55,7 @@ export default function ButtonHalf({ button1, button2 }: ButtonHalfProps) {
         <Text
           style={[
             styles.buttonText,
-            { color: button2.textColor || '#FFFFFF' },
+            { color: button2.textColor || "#FFFFFF" },
             button2.disabled && styles.textDisabled,
           ]}
         >
@@ -68,7 +68,7 @@ export default function ButtonHalf({ button1, button2 }: ButtonHalfProps) {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginHorizontal: 15,
   },
   button: {
@@ -77,8 +77,8 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     paddingVertical: 14,
     paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonPressed: {
     opacity: 0.8,
@@ -91,11 +91,10 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
   textDisabled: {
     opacity: 0.6,
   },
 });
-

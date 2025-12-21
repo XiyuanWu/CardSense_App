@@ -1,4 +1,4 @@
-import { TextInput, StyleSheet, TextInputProps } from 'react-native';
+import { TextInput, StyleSheet, TextInputProps } from "react-native";
 
 interface TextInputFullProps extends TextInputProps {
   placeholder: string;
@@ -22,14 +22,13 @@ const styles = StyleSheet.create({
   input: {
     marginHorizontal: 15,
     height: 50,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: "#F5F7FA",
     borderWidth: 1,
-    borderColor: '#E6EAEF',
+    borderColor: "#E6EAEF",
     borderRadius: 15,
     paddingHorizontal: 16,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#222222',
+    fontWeight: "600",
+    color: "#222222",
   },
 });
-

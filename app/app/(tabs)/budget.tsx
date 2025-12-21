@@ -1,2 +1,1 @@
-export { default } from '../../screen/dashboard/budgetPage';
-
+export { default } from "../../screen/dashboard/budgetPage";

@@ -1,18 +1,18 @@
-import { View, Text, StyleSheet, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useState } from 'react';
-import ButtonFull from '../../components/button/buttonFull';
-import TextInputFull from '../../components/textInput/textInputFull';
-import TextInputHalf from '../../components/textInput/textInputHalf';
+import { View, Text, StyleSheet, Alert } from "react-native";
+import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useState } from "react";
+import ButtonFull from "../../components/button/buttonFull";
+import TextInputFull from "../../components/textInput/textInputFull";
+import TextInputHalf from "../../components/textInput/textInputHalf";
 
 export default function SignUpPage() {
   const router = useRouter();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   return (
     <SafeAreaView style={styles.container}>
@@ -28,8 +28,8 @@ export default function SignUpPage() {
           value2={lastName}
           onChangeText1={setFirstName}
           onChangeText2={setLastName}
-          input1Props={{ autoCapitalize: 'words' }}
-          input2Props={{ autoCapitalize: 'words' }}
+          input1Props={{ autoCapitalize: "words" }}
+          input2Props={{ autoCapitalize: "words" }}
         />
 
         {/* Full Width Input Fields */}
@@ -65,8 +65,8 @@ export default function SignUpPage() {
             textColor="#FFFFFF"
             onPress={() => {
               // Handle sign up logic here
-              Alert.alert('Account created!');
-              router.push('/(auth)/login');
+              Alert.alert("Account created!");
+              router.push("/(auth)/login");
             }}
           />
         </View>
@@ -74,10 +74,10 @@ export default function SignUpPage() {
         {/* Log In Link */}
         <View style={styles.logInContainer}>
           <Text style={styles.logInText}>
-            Already have an account?{' '}
+            Already have an account?{" "}
             <Text
               style={styles.logInLink}
-              onPress={() => router.push('/(auth)/login')}
+              onPress={() => router.push("/(auth)/login")}
             >
               Log in
             </Text>
@@ -91,19 +91,19 @@ export default function SignUpPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    alignContent: 'center',
+    backgroundColor: "#FFFFFF",
+    alignContent: "center",
   },
   content: {
     flex: 1,
     paddingHorizontal: 35,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   title: {
     fontSize: 26,
-    fontWeight: '600',
-    color: '#222222',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#222222",
+    textAlign: "center",
     marginBottom: 30,
   },
   inputsContainer: {
@@ -117,17 +117,16 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   logInContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 20,
   },
   logInText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#222222',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#222222",
+    textAlign: "center",
   },
   logInLink: {
-    color: '#5E17EB',
+    color: "#5E17EB",
   },
 });
-

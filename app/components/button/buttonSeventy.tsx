@@ -1,7 +1,6 @@
+import { Pressable, Text, StyleSheet, PressableProps } from "react-native";
 
-import { Pressable, Text, StyleSheet, PressableProps } from 'react-native';
-
-interface ButtonFullProps extends Omit<PressableProps, 'style'> {
+interface ButtonFullProps extends Omit<PressableProps, "style"> {
   text: string;
   onPress: () => void;
   color?: string;
@@ -13,8 +12,8 @@ interface ButtonFullProps extends Omit<PressableProps, 'style'> {
 export default function ButtonSeventy({
   text,
   onPress,
-  color = '#5E17EB',
-  textColor = '#FFFFFF',
+  color = "#5E17EB",
+  textColor = "#FFFFFF",
   border,
   disabled = false,
   ...pressableProps
@@ -32,7 +31,13 @@ export default function ButtonSeventy({
       disabled={disabled}
       {...pressableProps}
     >
-      <Text style={[styles.buttonText, { color: textColor }, disabled && styles.textDisabled]}>
+      <Text
+        style={[
+          styles.buttonText,
+          { color: textColor },
+          disabled && styles.textDisabled,
+        ]}
+      >
         {text}
       </Text>
     </Pressable>
@@ -45,10 +50,10 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     paddingVertical: 14,
     paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '70%',
-    alignSelf: 'center',
+    alignItems: "center",
+    justifyContent: "center",
+    width: "70%",
+    alignSelf: "center",
   },
   buttonPressed: {
     opacity: 0.8,
@@ -58,11 +63,10 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
   textDisabled: {
     opacity: 0.6,
   },
 });
-

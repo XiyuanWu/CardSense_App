@@ -1,6 +1,6 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import NavBar from '../../components/navBar';
+import { Tabs } from "expo-router";
+import React from "react";
+import NavBar from "../../components/navBar";
 
 export default function TabLayout() {
   return (
@@ -8,64 +8,65 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarStyle: { display: 'none' },
-        }}>
+          tabBarStyle: { display: "none" },
+        }}
+      >
         <Tabs.Screen
           name="dashboard"
           options={{
-            title: 'Dashboard',
+            title: "Dashboard",
           }}
         />
         <Tabs.Screen
           name="transactions"
           options={{
-            title: 'Transactions',
+            title: "Transactions",
           }}
         />
         <Tabs.Screen
           name="cards"
           options={{
-            title: 'Cards',
+            title: "Cards",
           }}
         />
         <Tabs.Screen
           name="settings"
           options={{
-            title: 'Settings',
+            title: "Settings",
           }}
         />
         <Tabs.Screen
           name="budget"
           options={{
-            title: 'Budget',
+            title: "Budget",
             href: null, // Hide from tab bar
           }}
         />
         <Tabs.Screen
           name="addBudget"
           options={{
-            title: 'Add Budget',
+            title: "Add Budget",
             href: null, // Hide from tab bar
           }}
         />
         <Tabs.Screen
           name="addTransactions"
           options={{
-            title: 'Add Transactions',
+            title: "Add Transactions",
             href: null, // Hide from tab bar
           }}
         />
         <Tabs.Screen
           name="transactionsDetail"
           options={{
-            title: 'Transactions Detail',
+            title: "Transactions Detail",
             href: null, // Hide from tab bar
           }}
         />
         <Tabs.Screen
           name="addCards"
           options={{
-            title: 'Add Cards',
+            title: "Add Cards",
             href: null, // Hide from tab bar
           }}
         />

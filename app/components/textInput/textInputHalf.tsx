@@ -1,4 +1,4 @@
-import { View, TextInput, StyleSheet, TextInputProps } from 'react-native';
+import { View, TextInput, StyleSheet, TextInputProps } from "react-native";
 
 interface TextInputHalfProps {
   placeholder1: string;
@@ -50,7 +50,7 @@ export default function TextInputHalf({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginHorizontal: 15,
     marginBottom: 18,
   },
@@ -59,17 +59,16 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 50,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: "#F5F7FA",
     borderWidth: 1,
-    borderColor: '#E6EAEF',
+    borderColor: "#E6EAEF",
     borderRadius: 15,
     paddingHorizontal: 16,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#222222',
+    fontWeight: "600",
+    color: "#222222",
   },
   spacing: {
     width: 18,
   },
 });
-

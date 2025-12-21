@@ -1,9 +1,9 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import ButtonSeventy from '@/components/button/buttonSeventy';
-import Card from '@/components/cards/card';
+import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import ButtonSeventy from "@/components/button/buttonSeventy";
+import Card from "@/components/cards/card";
 
 interface UserCard {
   id: string;
@@ -37,7 +37,7 @@ export default function CardsPage() {
     //   return response;
     // };
     // await deleteCard();
-    console.log('Delete card:', id);
+    console.log("Delete card:", id);
   };
 
   // Helper function to render cards in rows of 2
@@ -60,14 +60,14 @@ export default function CardsPage() {
             />
           ))}
           {cardPair.length === 1 && <View style={styles.cardSpacer} />}
-        </View>
+        </View>,
       );
     }
     return rows;
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
@@ -75,7 +75,7 @@ export default function CardsPage() {
           <Pressable
             style={styles.addButton}
             onPress={() => {
-              router.push('/(tabs)/addCards');
+              router.push("/(tabs)/addCards");
             }}
           >
             <Ionicons name="add" size={24} color="#000000" />
@@ -87,12 +87,12 @@ export default function CardsPage() {
           <View style={styles.emptyStateContainer}>
             <View style={styles.emptyStateContent}>
               <Text style={styles.emptyStateTitle}>
-                You don&apos;t have a card yet.{'\n'}Add one now!
+                You don&apos;t have a card yet.{"\n"}Add one now!
               </Text>
               <ButtonSeventy
                 text="Add Cards"
                 onPress={() => {
-                  router.push('/(tabs)/addCards');
+                  router.push("/(tabs)/addCards");
                 }}
               />
             </View>
@@ -123,7 +123,7 @@ export default function CardsPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   content: {
     flex: 1,
@@ -132,24 +132,24 @@ const styles = StyleSheet.create({
     paddingBottom: 80, // Space for nav bar
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 20,
   },
   title: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#222222',
-    textAlign: 'center',
+    fontWeight: "700",
+    color: "#222222",
+    textAlign: "center",
     marginLeft: 30,
     flex: 1,
   },
   addButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   scrollView: {
     flex: 1,
@@ -162,20 +162,20 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#222222',
+    fontWeight: "600",
+    color: "#222222",
     marginBottom: 2,
   },
   sectionDescription: {
     fontSize: 10,
-    fontWeight: '600',
-    color: '#777777',
+    fontWeight: "600",
+    color: "#777777",
   },
   cardsGrid: {
     gap: 15,
   },
   cardRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 15,
     marginBottom: 15,
   },
@@ -187,21 +187,20 @@ const styles = StyleSheet.create({
   },
   emptyStateContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 40,
   },
   emptyStateContent: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 16,
     width: 350,
   },
   emptyStateTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#222222',
-    textAlign: 'center',
+    fontWeight: "700",
+    color: "#222222",
+    textAlign: "center",
     lineHeight: 28,
   },
 });
-

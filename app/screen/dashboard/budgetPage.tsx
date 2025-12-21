@@ -1,8 +1,8 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import ButtonSeventy from '@/components/button/buttonSeventy';
+import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import ButtonSeventy from "@/components/button/buttonSeventy";
 
 interface Budget {
   id: string;
@@ -34,7 +34,7 @@ export default function BudgetPage() {
     //   return response;
     // };
     // await deleteBudget();
-    console.log('Delete budget:', id);
+    console.log("Delete budget:", id);
   };
 
   return (
@@ -48,7 +48,7 @@ export default function BudgetPage() {
           <Text style={styles.title}>Budgets</Text>
           <Pressable
             style={styles.iconButton}
-            onPress={() => router.push('/(tabs)/addBudget')}
+            onPress={() => router.push("/(tabs)/addBudget")}
           >
             <Ionicons name="add" size={24} color="#000000" />
           </Pressable>
@@ -59,11 +59,11 @@ export default function BudgetPage() {
           <View style={styles.emptyStateContainer}>
             <View style={styles.emptyStateContent}>
               <Text style={styles.emptyStateTitle}>
-                You don&apos;t have a budget yet.{'\n'}Add one now!
+                You don&apos;t have a budget yet.{"\n"}Add one now!
               </Text>
               <ButtonSeventy
                 text="Add Budget"
-                onPress={() => router.push('/(tabs)/addBudget')}
+                onPress={() => router.push("/(tabs)/addBudget")}
               />
             </View>
           </View>
@@ -110,7 +110,7 @@ export default function BudgetPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   content: {
     flex: 1,
@@ -119,22 +119,22 @@ const styles = StyleSheet.create({
     paddingBottom: 20, // No nav bar on this page
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 20,
   },
   iconButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#222222',
-    textAlign: 'center',
+    fontWeight: "700",
+    color: "#222222",
+    textAlign: "center",
     flex: 1,
   },
   budgetsList: {
@@ -145,13 +145,13 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   budgetCard: {
-    backgroundColor: '#F5F7FA',
+    backgroundColor: "#F5F7FA",
     borderWidth: 1,
-    borderColor: '#E6EAEF',
+    borderColor: "#E6EAEF",
     borderRadius: 20,
     padding: 17,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     minHeight: 105,
   },
   budgetLeft: {
@@ -159,28 +159,28 @@ const styles = StyleSheet.create({
   },
   budgetMonth: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#222222',
+    fontWeight: "600",
+    color: "#222222",
     marginBottom: 8,
   },
   budgetLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#777777',
+    fontWeight: "600",
+    color: "#777777",
   },
   budgetRight: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   budgetSpent: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#222222',
+    fontWeight: "600",
+    color: "#222222",
     marginBottom: 8,
   },
   budgetRemaining: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#777777',
+    fontWeight: "600",
+    color: "#777777",
     marginBottom: 8,
   },
   deleteButton: {
@@ -188,40 +188,39 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     fontSize: 10,
-    fontWeight: '600',
-    color: '#DC2527',
+    fontWeight: "600",
+    color: "#DC2527",
   },
   emptyStateContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 40,
   },
   emptyStateContent: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 16,
     width: 350,
   },
   emptyStateTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#222222',
-    textAlign: 'center',
+    fontWeight: "700",
+    color: "#222222",
+    textAlign: "center",
     lineHeight: 28,
   },
   addButtonEmpty: {
-    backgroundColor: '#5E17EB',
+    backgroundColor: "#5E17EB",
     height: 50,
     borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '66%',
+    justifyContent: "center",
+    alignItems: "center",
+    width: "66%",
     paddingHorizontal: 20,
   },
   addButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });
-
