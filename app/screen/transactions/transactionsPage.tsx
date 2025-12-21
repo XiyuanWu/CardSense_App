@@ -73,7 +73,16 @@ export default function TransactionsPage() {
                 <Text style={styles.dateHeader}>{group.date}</Text>
                 <View style={styles.transactionsList}>
                   {group.transactions.map((transaction, index) => (
-                    <View key={transaction.id} style={styles.transactionCard}>
+                    <Pressable
+                      key={transaction.id}
+                      style={styles.transactionCard}
+                      onPress={() => {
+                        router.push({
+                          pathname: '/(tabs)/transactionsDetail',
+                          params: { transactionId: transaction.id },
+                        });
+                      }}
+                    >
                       <View style={styles.transactionLeft}>
                         <Text style={styles.merchantName}>{transaction.merchant}</Text>
                         <Text style={styles.transactionDetails}>
@@ -88,7 +97,7 @@ export default function TransactionsPage() {
                           ${transaction.earned.toFixed(2)} Earned
                         </Text>
                       </View>
-                    </View>
+                    </Pressable>
                   ))}
                 </View>
                 {groupIndex < transactionGroups.length - 1 && (
@@ -125,6 +134,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#222222',
     textAlign: 'center',
+    marginLeft: 30,
     flex: 1,
   },
   addButton: {
