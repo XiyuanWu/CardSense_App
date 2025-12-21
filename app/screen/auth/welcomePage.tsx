@@ -14,7 +14,7 @@ export default function WelcomeScreen() {
           <Image
             source={require('../../assets/images/CardSense logo.png')}
             style={styles.logo}
-            resizeMode="contain"
+            resizeMode="cover"
           />
           <View style={styles.textContainer}>
             <Text style={styles.titleText}>Maximize Your Credit Card</Text>
@@ -61,16 +61,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 20,
+    paddingTop: 10,
   },
   logo: {
-    width: 370,
-    height: 206,
+    width: 500,
+    height: 300,
     maxWidth: '100%',
-    marginBottom: 15,
+    marginBottom: -20,
   },
   textContainer: {
     alignItems: 'center',
+    marginTop: -20,
   },
   titleText: {
     fontSize: 20,
