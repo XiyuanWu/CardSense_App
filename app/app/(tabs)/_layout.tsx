@@ -55,6 +55,20 @@ export default function TabLayout() {
             href: null, // Hide from tab bar
           }}
         />
+        <Tabs.Screen
+          name="transactionsDetail"
+          options={{
+            title: 'Transactions Detail',
+            href: null, // Hide from tab bar
+          }}
+        />
+        <Tabs.Screen
+          name="addCards"
+          options={{
+            title: 'Add Cards',
+            href: null, // Hide from tab bar
+          }}
+        />
       </Tabs>
       <NavBar />
     </>

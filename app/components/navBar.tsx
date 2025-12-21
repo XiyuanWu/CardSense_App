@@ -42,6 +42,15 @@ export default function NavBar() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
 
+  // Hide nav bar on detail/add pages
+  const hiddenRoutes = ['addCards', 'addBudget', 'addTransactions', 'transactionsDetail', 'budget'];
+  const shouldHideNavBar = hiddenRoutes.some((route) => pathname.includes(route));
+
+  // Don't render nav bar if it should be hidden
+  if (shouldHideNavBar) {
+    return null;
+  }
+
   const isActive = (route: string) => {
     // Normalize paths for comparison
     const normalizedPathname = pathname.replace(/\/$/, ''); // Remove trailing slash
