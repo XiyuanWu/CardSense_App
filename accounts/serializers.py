@@ -47,9 +47,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             counter += 1
         
         validated_data['username'] = username
-        user = User.objects.create_user(**validated_data)
-        user.set_password(password)
-        user.save()
+        # Create user with password - create_user handles password hashing
+        user = User.objects.create_user(password=password, **validated_data)
         return user
 
 

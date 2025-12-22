@@ -1,10 +1,11 @@
-import { View, Text, StyleSheet, Alert } from "react-native";
+import { View, Text, StyleSheet, Alert, ActivityIndicator, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import ButtonFull from "../../components/button/buttonFull";
 import TextInputFull from "../../components/textInput/textInputFull";
 import TextInputHalf from "../../components/textInput/textInputHalf";
+import { registerUser } from "../../utils/api";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -13,6 +14,118 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const validateForm = (): boolean => {
+    setError(null);
+
+    if (!firstName.trim()) {
+      setError("First name is required");
+      return false;
+    }
+
+    if (!lastName.trim()) {
+      setError("Last name is required");
+      return false;
+    }
+
+    if (!email.trim()) {
+      setError("Email is required");
+      return false;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address");
+      return false;
+    }
+
+    if (!password) {
+      setError("Password is required");
+      return false;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSignUp = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await registerUser({
+        email: email.trim(),
+        password,
+        confirmPassword,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+      });
+
+      console.log("[SignUp] Registration response:", response);
+      console.log("[SignUp] Response success:", response.success);
+
+      if (response.success) {
+        console.log("[SignUp] Showing success alert and navigating...");
+        
+        // Show success alert and navigate to login page
+        // On web, Alert.alert might not work, so we'll navigate after a short delay
+        if (Platform.OS === "web") {
+          // For web, show alert and navigate immediately
+          alert("Register Success!\n\nYour account has been created successfully!");
+          // Small delay to ensure alert is shown before navigation
+          setTimeout(() => {
+            console.log("[SignUp] Navigating to login page...");
+            router.push("/(auth)/login");
+          }, 100);
+        } else {
+          // For mobile, use Alert.alert
+          Alert.alert(
+            "Register Success",
+            "Your account has been created successfully!",
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  console.log("[SignUp] Alert dismissed, navigating to login...");
+                  router.push("/(auth)/login");
+                },
+              },
+            ]
+          );
+        }
+      } else {
+        // Handle API errors
+        const errorMessage =
+          response.error.details && Object.keys(response.error.details).length > 0
+            ? Object.values(response.error.details)
+                .flat()
+                .join(", ")
+            : response.error.message;
+        setError(errorMessage);
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+      console.error("Sign up error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -57,18 +170,27 @@ export default function SignUpPage() {
           />
         </View>
 
+        {/* Error Message */}
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
         {/* Create Account Button */}
         <View style={styles.buttonContainer}>
-          <ButtonFull
-            color="#5E17EB"
-            text="Create Account"
-            textColor="#FFFFFF"
-            onPress={() => {
-              // Handle sign up logic here
-              Alert.alert("Account created!");
-              router.push("/(auth)/login");
-            }}
-          />
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#5E17EB" />
+            </View>
+          ) : (
+            <ButtonFull
+              color="#5E17EB"
+              text="Create Account"
+              textColor="#FFFFFF"
+              onPress={handleSignUp}
+            />
+          )}
         </View>
 
         {/* Log In Link */}
@@ -128,5 +250,20 @@ const styles = StyleSheet.create({
   },
   logInLink: {
     color: "#5E17EB",
+  },
+  errorContainer: {
+    marginBottom: 15,
+    paddingHorizontal: 15,
+  },
+  errorText: {
+    color: "#FF3B30",
+    fontSize: 14,
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  loadingContainer: {
+    paddingVertical: 15,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

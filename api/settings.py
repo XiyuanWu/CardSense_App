@@ -25,7 +25,9 @@ SECRET_KEY = 'django-insecure-5ygg#%lu!e4j04bpxxv82zm2_zh!*yd2km(lcss-#6v6^22nx$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# Allow all hosts in development (for localhost, emulators, etc.)
+# In production, specify exact hosts
+ALLOWED_HOSTS = ['*'] if DEBUG else []
 
 
 # Application definition
@@ -58,10 +60,22 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+# For development, allow all origins (simplifies localhost connections)
+# In production, specify exact origins
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:19006",  # Expo web default port
+        "http://127.0.0.1:19006",  # Expo web default port
+        "http://localhost:8081", 
+        "http://127.0.0.1:8081", 
+        "http://localhost:8002",
+        "http://127.0.0.1:8082"
+        "http://10.0.2.2:3000",  # Android emulator
+    ]
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -85,12 +99,30 @@ CORS_EXPOSE_HEADERS = [
 ]
 
 # CSRF settings for session auth with React frontend
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-]
+# CSRF trusted origins - allow all localhost ports in development
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost",
+        "http://127.0.0.1",
+        "http://10.0.2.2",  # Android emulator
+    ]
+    # Also add common ports
+    for port in [3000, 8000, 8081, 8082, 19006]:
+        CSRF_TRUSTED_ORIGINS.extend([
+            f"http://localhost:{port}",
+            f"http://127.0.0.1:{port}",
+        ])
+else:
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:19006",
+        "http://127.0.0.1:19006",
+        "http://localhost:8081",
+        "http://127.0.0.1:8081",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
 
 # Allow cookies from cross-origin requests (needed for session auth)
 SESSION_COOKIE_SAMESITE = 'Lax'

@@ -45,6 +45,7 @@ pip install Django
 pip install djangorestframework django
 pip install django-cors-headers
 pip install django-multiselectfield
+pip install django-cors-headers
 ```
 **React**
 
@@ -69,7 +70,14 @@ Website should live on http://localhost:3000/.
 2. Open a new terminal, now run backend:
 
 use `cd ..` swtich to `Cardsense/` folder, then run backend
-```bush
+
+**For Android Emulator or Physical Devices:**
+```bash
+python manage.py runserver 0.0.0.0:8000
+```
+
+**For iOS Simulator or Web:**
+```bash
 python manage.py runserver
 ```
 

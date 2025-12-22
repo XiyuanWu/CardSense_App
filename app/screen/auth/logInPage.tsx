@@ -1,15 +1,128 @@
-import { View, Text, StyleSheet, Image, Pressable } from "react-native";
+import { View, Text, StyleSheet, Image, Pressable, ActivityIndicator, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ButtonFull from "../../components/button/buttonFull";
 import TextInputFull from "../../components/textInput/textInputFull";
+import { loginUser } from "../../utils/api";
+
+// Storage utility for "Remember me" functionality
+const REMEMBER_ME_KEY = "@CardSense:rememberedEmail";
+
+async function getRememberedEmail(): Promise<string | null> {
+  try {
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+      return window.localStorage.getItem(REMEMBER_ME_KEY);
+    }
+    // For React Native, we can add AsyncStorage support later if needed
+    return null;
+  } catch (error) {
+    console.error("Error getting remembered email:", error);
+    return null;
+  }
+}
+
+async function setRememberedEmail(email: string | null): Promise<void> {
+  try {
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+      if (email) {
+        window.localStorage.setItem(REMEMBER_ME_KEY, email);
+      } else {
+        window.localStorage.removeItem(REMEMBER_ME_KEY);
+      }
+    }
+    // For React Native, we can add AsyncStorage support later if needed
+  } catch (error) {
+    console.error("Error setting remembered email:", error);
+  }
+}
 
 export default function LogInPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load remembered email on component mount
+  useEffect(() => {
+    const loadRememberedEmail = async () => {
+      const rememberedEmail = await getRememberedEmail();
+      if (rememberedEmail) {
+        setEmail(rememberedEmail);
+        setRememberMe(true);
+      }
+    };
+    loadRememberedEmail();
+  }, []);
+
+  const validateForm = (): boolean => {
+    setError(null);
+
+    if (!email.trim()) {
+      setError("Email is required");
+      return false;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address");
+      return false;
+    }
+
+    if (!password) {
+      setError("Password is required");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleLogin = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await loginUser({
+        email: email.trim(),
+        password,
+      });
+
+      if (response.success) {
+        // Handle "Remember me" functionality
+        if (rememberMe) {
+          // Save email for next time
+          await setRememberedEmail(email.trim());
+        } else {
+          // Clear saved email if "Remember me" is unchecked
+          await setRememberedEmail(null);
+        }
+
+        // Login successful - navigate to dashboard
+        router.push("/(tabs)/dashboard");
+      } else {
+        // Handle API errors
+        const errorMessage =
+          response.error.details && Object.keys(response.error.details).length > 0
+            ? Object.values(response.error.details)
+                .flat()
+                .join(", ")
+            : response.error.message;
+        setError(errorMessage);
+      }
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again.");
+      console.error("Login error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -62,17 +175,27 @@ export default function LogInPage() {
           </Pressable>
         </View>
 
+        {/* Error Message */}
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
         {/* Sign In Button */}
         <View style={styles.buttonContainer}>
-          <ButtonFull
-            color="#5E17EB"
-            text="Sign In"
-            textColor="#FFFFFF"
-            onPress={() => {
-              // Handle login logic here
-              router.push("/(tabs)/dashboard");
-            }}
-          />
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#5E17EB" />
+            </View>
+          ) : (
+            <ButtonFull
+              color="#5E17EB"
+              text="Sign In"
+              textColor="#FFFFFF"
+              onPress={handleLogin}
+            />
+          )}
         </View>
 
         {/* Sign Up Link */}
@@ -180,5 +303,20 @@ const styles = StyleSheet.create({
   },
   signUpLink: {
     color: "#5E17EB",
+  },
+  errorContainer: {
+    marginBottom: 15,
+    paddingHorizontal: 15,
+  },
+  errorText: {
+    color: "#FF3B30",
+    fontSize: 14,
+    fontWeight: "500",
+    textAlign: "center",
+  },
+  loadingContainer: {
+    paddingVertical: 15,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
