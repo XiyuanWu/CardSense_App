@@ -52,9 +52,12 @@ export default function NavBar() {
     "transactionsDetail",
     "budget",
   ];
-  const shouldHideNavBar = hiddenRoutes.some((route) =>
-    pathname.includes(route),
-  );
+  const shouldHideNavBar = hiddenRoutes.some((route) => {
+    // Check if pathname includes the route (case-insensitive)
+    const normalizedPathname = pathname.toLowerCase();
+    const normalizedRoute = route.toLowerCase();
+    return normalizedPathname.includes(normalizedRoute);
+  });
 
   // Don't render nav bar if it should be hidden
   if (shouldHideNavBar) {
