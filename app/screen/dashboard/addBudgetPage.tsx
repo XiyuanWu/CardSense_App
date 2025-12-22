@@ -18,6 +18,18 @@ export default function AddBudgetPage() {
     router.push("/(tabs)/budget");
   };
 
+  const handleBudgetAmountChange = (text: string) => {
+    // Only allow numbers and decimal point
+    const numericValue = text.replace(/[^0-9.]/g, "");
+    // Ensure only one decimal point
+    const parts = numericValue.split(".");
+    if (parts.length > 2) {
+      setBudgetAmount(parts[0] + "." + parts.slice(1).join(""));
+    } else {
+      setBudgetAmount(numericValue);
+    }
+  };
+
   const handleAdd = async () => {
     // TODO: Replace with backend API call
     // const addBudget = async () => {
@@ -104,7 +116,7 @@ export default function AddBudgetPage() {
               <TextInputFull
                 placeholder="Budget Amount"
                 value={budgetAmount}
-                onChangeText={setBudgetAmount}
+                onChangeText={handleBudgetAmountChange}
                 keyboardType="decimal-pad"
               />
             </View>

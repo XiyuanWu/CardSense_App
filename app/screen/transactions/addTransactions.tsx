@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Pressable, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import TextInputFull from "../../components/textInput/textInputFull";
@@ -14,6 +14,7 @@ export default function AddTransactionsPage() {
   const [category, setCategory] = useState("");
   const [cardUsed, setCardUsed] = useState("");
   const [notes, setNotes] = useState("");
+  const [bestCard, setBestCard] = useState("");
 
   // TODO: Replace with backend API call
   // const fetchUserCards = async () => {
@@ -42,6 +43,29 @@ export default function AddTransactionsPage() {
     { label: "Boa Customized Cash Rewards", value: "boa_customized_cash" },
     { label: "Amex Gold", value: "amex_gold" },
   ];
+
+  // TODO: Replace with backend API call
+  // const getBestCard = async (category: string) => {
+  //   const response = await fetch(`/api/transactions/best-card/?category=${category}`);
+  //   const data = await response.json();
+  //   return data.card_name;
+  // };
+
+  // Update best card recommendation when category changes
+  useEffect(() => {
+    if (category) {
+      // Placeholder - will fetch from backend based on category
+      setBestCard("Chase Sapphire Preferred");
+      // TODO: Replace with backend API call
+      // const fetchBestCard = async () => {
+      //   const card = await getBestCard(category);
+      //   setBestCard(card);
+      // };
+      // fetchBestCard();
+    } else {
+      setBestCard("");
+    }
+  }, [category]);
 
   const handleCancel = () => {
     router.push("/(tabs)/transactions");
@@ -155,6 +179,18 @@ export default function AddTransactionsPage() {
             </View>
           </View>
 
+          {/* Best Card Recommendation */}
+          {category && (
+            <View style={styles.bestCardSection}>
+              <Text style={styles.bestCardText}>
+                Base on your selection, the best card for this category is:
+              </Text>
+              <View style={styles.bestCardBox}>
+                <Text style={styles.bestCardName}>{bestCard}</Text>
+              </View>
+            </View>
+          )}
+
           {/* Buttons */}
           <View style={styles.buttonsContainer}>
             <ButtonHalf
@@ -243,6 +279,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#222222",
+  },
+  bestCardSection: {
+    marginTop: 20,
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  bestCardText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#222222",
+    textAlign: "center",
+    marginBottom: 10,
+    paddingHorizontal: 15,
+  },
+  bestCardBox: {
+    width: "100%",
+    height: 38,
+    backgroundColor: "#F5F7FA",
+    borderWidth: 1,
+    borderColor: "#E6EAEF",
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 16,
+  },
+  bestCardName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#222222",
+    textAlign: "center",
   },
   buttonsContainer: {
     marginTop: 15,
