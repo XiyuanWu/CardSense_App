@@ -36,12 +36,21 @@ class GetCSRFToken(APIView):
     permission_classes = [AllowAny]
     
     def get(self, request):
-        # This endpoint simply returns success and sets the CSRF cookie
-        # The actual token is sent as a cookie automatically by Django
-        return Response({
+        # This endpoint returns success and sets the CSRF cookie
+        # Also include the CSRF token in the response header for easier access
+        from django.middleware.csrf import get_token
+        csrf_token = get_token(request)
+        
+        response = Response({
             "success": True,
-            "message": "CSRF cookie set"
+            "message": "CSRF cookie set",
+            "csrf_token": csrf_token  # Include token in response body for web clients
         }, status=status.HTTP_200_OK)
+        
+        # Also set it in a custom header
+        response['X-CSRFToken'] = csrf_token
+        
+        return response
 
 
 class RegisterView(APIView):

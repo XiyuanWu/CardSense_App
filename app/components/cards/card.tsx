@@ -28,7 +28,7 @@ export default function Card({
           {iconType === "+" ? (
             <Ionicons name="add" size={20} color="#000000" />
           ) : (
-            <Text style={styles.minusIcon}>−</Text>
+            <Text style={styles.minusIcon}>-</Text>
           )}
         </Pressable>
       )}

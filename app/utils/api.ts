@@ -31,9 +31,9 @@ function getApiBaseUrl(): string {
     // iOS simulator can use localhost
     return "http://localhost:8000/api";
   } else {
-    // Web platform - use 127.0.0.1 for better compatibility
-    // Try localhost first, fallback to 127.0.0.1 if needed
-    return "http://127.0.0.1:8000/api";
+    // Web platform - use localhost to match session cookie domain
+    // Important: session cookies work better with localhost than 127.0.0.1
+    return "http://localhost:8000/api";
   }
 }
 
@@ -110,6 +110,26 @@ function extractCSRFTokenFromCookie(setCookieHeader: string | null): string | nu
 }
 
 /**
+ * Get CSRF token from browser cookies (for web platform)
+ */
+function getCSRFTokenFromCookies(): string | null {
+  if (typeof document === "undefined") return null;
+  
+  try {
+    const cookies = document.cookie.split(";");
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split("=");
+      if (name === "csrftoken" && value) {
+        return decodeURIComponent(value);
+      }
+    }
+  } catch (error) {
+    console.error("[API] Error reading cookies:", error);
+  }
+  return null;
+}
+
+/**
  * Get CSRF token from the backend
  */
 async function getCSRFToken(): Promise<string | null> {
@@ -126,7 +146,7 @@ async function getCSRFToken(): Promise<string | null> {
     console.log(`[API] CSRF response headers:`, Object.fromEntries(response.headers.entries()));
 
     if (response.ok) {
-      // Try to get CSRF token from response header
+      // Try to get CSRF token from response header first
       const token = response.headers.get("X-CSRFToken");
       if (token) {
         csrfToken = token;
@@ -134,7 +154,29 @@ async function getCSRFToken(): Promise<string | null> {
         return token;
       }
       
-      // Try to extract from Set-Cookie header
+      // Try to get from response body (Django now includes it)
+      try {
+        const result = await response.json();
+        if (result.csrf_token) {
+          csrfToken = result.csrf_token;
+          console.log("[API] CSRF token obtained from response body");
+          return result.csrf_token;
+        }
+      } catch {
+        // Ignore JSON parse errors, continue to try other methods
+      }
+      
+      // For web platform, try to read from document.cookie
+      if (Platform.OS === "web") {
+        const cookieToken = getCSRFTokenFromCookies();
+        if (cookieToken) {
+          csrfToken = cookieToken;
+          console.log("[API] CSRF token obtained from browser cookies");
+          return cookieToken;
+        }
+      }
+      
+      // Try to extract from Set-Cookie header (for React Native)
       const setCookie = response.headers.get("Set-Cookie");
       console.log(`[API] Set-Cookie header: ${setCookie}`);
       const cookieToken = extractCSRFTokenFromCookie(setCookie);
@@ -148,6 +190,18 @@ async function getCSRFToken(): Promise<string | null> {
       // The token might be in the cookie already, but we can't read it directly
       // Django will accept the request if the cookie is present
       console.log("[API] CSRF token not found in headers, but cookie may be set");
+      
+      // Wait a bit for cookie to be set, then try reading from cookies again (web only)
+      if (Platform.OS === "web") {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const delayedToken = getCSRFTokenFromCookies();
+        if (delayedToken) {
+          csrfToken = delayedToken;
+          console.log("[API] CSRF token obtained from browser cookies (after delay)");
+          return delayedToken;
+        }
+      }
+      
       return csrfToken;
     }
     console.warn(`[API] CSRF endpoint returned status ${response.status}`);
@@ -313,6 +367,14 @@ export async function loginUser(data: {
 }): Promise<ApiResponse<{ user: any }>> {
   try {
     console.log("[API] Attempting login for email:", data.email);
+    console.log("[API] CSRF token before login:", csrfToken ? "present" : "missing");
+    
+    // Ensure CSRF token is available before making the request
+    if (!csrfToken) {
+      console.log("[API] CSRF token missing, fetching...");
+      await getCSRFToken();
+      console.log("[API] CSRF token after fetch:", csrfToken ? "obtained" : "still missing");
+    }
     
     const response = await apiRequest("/auth/login/", {
       method: "POST",
@@ -323,17 +385,73 @@ export async function loginUser(data: {
     });
 
     console.log("[API] Login response status:", response.status);
+    console.log("[API] Login response headers:", Object.fromEntries(response.headers.entries()));
+    
+    // Check if response is ok before trying to parse JSON
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { detail: `HTTP ${response.status}: ${response.statusText}` };
+      }
+      console.error("[API] Login error response:", errorData);
+      
+      // Handle CSRF errors specifically - retry once with fresh token
+      if (response.status === 403 && errorData.detail && errorData.detail.includes("CSRF")) {
+        console.log("[API] CSRF error detected, fetching new token and retrying...");
+        // Clear current token and fetch fresh one
+        csrfToken = null;
+        await getCSRFToken();
+        
+        // Retry the login request
+        const retryResponse = await apiRequest("/auth/login/", {
+          method: "POST",
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password,
+          }),
+        });
+        
+        if (retryResponse.ok) {
+          const retryResult = await retryResponse.json();
+          console.log("[API] Login successful after retry!");
+          return retryResult as ApiSuccessResponse<{ user: any }>;
+        } else {
+          const retryError = await retryResponse.json().catch(() => ({ detail: "CSRF token error" }));
+          return {
+            success: false,
+            error: {
+              code: "CSRF_ERROR",
+              message: retryError.detail || retryError.message || "CSRF token validation failed",
+            },
+          };
+        }
+      }
+      
+      return {
+        success: false,
+        error: {
+          code: response.status === 401 ? "AUTHENTICATION_FAILED" : response.status === 403 ? "FORBIDDEN" : "API_ERROR",
+          message: errorData.detail || errorData.message || `Login failed (${response.status})`,
+          details: errorData,
+        },
+      };
+    }
     
     const result = await response.json();
     console.log("[API] Login response data:", result);
 
-    if (response.ok) {
+    if (result.success) {
       console.log("[API] Login successful!");
       return result as ApiSuccessResponse<{ user: any }>;
-    } else {
-      console.error("[API] Login failed:", result);
-      return result as ApiErrorResponse;
     }
+    
+    // Fallback if response doesn't have success field
+    return {
+      success: true,
+      data: { user: result },
+    };
   } catch (error: any) {
     console.error("Login error:", error);
     console.error("Login error details:", {
@@ -350,6 +468,426 @@ export async function loginUser(data: {
       error: {
         code: "NETWORK_ERROR",
         message: `Failed to connect to server: ${errorMessage}. Please check that Django is running on ${API_BASE_URL.replace('/api', '')}`,
+      },
+    };
+  }
+}
+
+/**
+ * Check if user is authenticated
+ */
+export async function checkAuth(): Promise<ApiResponse<{ user: any }>> {
+  try {
+    console.log("[API] Checking authentication...");
+    
+    const response = await apiRequest("/auth/me/", {
+      method: "GET",
+    });
+
+    console.log("[API] Auth check response status:", response.status);
+    
+    const result = await response.json();
+    console.log("[API] Auth check response data:", result);
+
+    if (response.ok) {
+      return {
+        success: true,
+        data: { user: result },
+      };
+    } else {
+      return {
+        success: false,
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Not authenticated",
+        },
+      };
+    }
+  } catch (error: any) {
+    console.error("Auth check error:", error);
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: "Failed to check authentication",
+      },
+    };
+  }
+}
+
+/**
+ * Card-related API functions
+ */
+
+export interface CardData {
+  id: number;
+  issuer: string;
+  name: string;
+  annual_fee: string;
+  ftf: boolean;
+  reward_rules?: any[];
+  benefits?: any[];
+}
+
+/**
+ * Get all available cards
+ */
+export async function getAvailableCards(): Promise<ApiResponse<CardData[]>> {
+  try {
+    console.log("[API] Fetching available cards...");
+    console.log("[API] Full URL will be:", `${API_BASE_URL}/cards/cards/`);
+    
+    const response = await apiRequest("/cards/cards/", {
+      method: "GET",
+    });
+
+    console.log("[API] Cards response status:", response.status);
+    console.log("[API] Cards response headers:", Object.fromEntries(response.headers.entries()));
+    
+    // Check if response is ok before trying to parse JSON
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+      }
+      console.error("[API] Cards error response:", errorData);
+      return {
+        success: false,
+        error: {
+          code: response.status === 401 ? "UNAUTHORIZED" : "API_ERROR",
+          message: errorData.message || errorData.detail || `Failed to fetch cards (${response.status})`,
+          details: errorData,
+        },
+      };
+    }
+    
+    const result = await response.json();
+    console.log("[API] Cards response data:", result);
+
+    // The backend returns { success: true, data: [...] }
+    if (result.success && result.data) {
+      return {
+        success: true,
+        data: result.data,
+      };
+    }
+    // Fallback if structure is different
+    if (Array.isArray(result)) {
+      return {
+        success: true,
+        data: result,
+      };
+    }
+    if (result.data && Array.isArray(result.data)) {
+      return {
+        success: true,
+        data: result.data,
+      };
+    }
+    
+    // If we get here, the response structure is unexpected
+    console.warn("[API] Unexpected response structure:", result);
+    return {
+      success: false,
+      error: {
+        code: "INVALID_RESPONSE",
+        message: "Unexpected response format from server",
+      },
+    };
+  } catch (error: any) {
+    console.error("Get cards error:", error);
+    console.error("Error details:", {
+      message: error?.message,
+      name: error?.name,
+      stack: error?.stack,
+    });
+    const errorMessage = error?.message || "Unknown error";
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: `Failed to fetch cards: ${errorMessage}`,
+      },
+    };
+  }
+}
+
+/**
+ * Get user's cards
+ */
+export interface UserCardData {
+  id: number;
+  card: number;
+  card_id: number;
+  card_name: string;
+  is_active: boolean;
+  notes?: string;
+  // Card details (if expanded)
+  card_details?: CardData;
+}
+
+export async function getUserCards(): Promise<ApiResponse<UserCardData[]>> {
+  try {
+    console.log("[API] Fetching user cards...");
+    
+    const response = await apiRequest("/cards/user-cards/", {
+      method: "GET",
+    });
+
+    console.log("[API] User cards response status:", response.status);
+    
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+      }
+      console.error("[API] User cards error response:", errorData);
+      return {
+        success: false,
+        error: {
+          code: response.status === 401 ? "UNAUTHORIZED" : "API_ERROR",
+          message: errorData.message || errorData.detail || `Failed to fetch user cards (${response.status})`,
+          details: errorData,
+        },
+      };
+    }
+    
+    const result = await response.json();
+    console.log("[API] User cards response data:", result);
+
+    if (result.success && result.data) {
+      return {
+        success: true,
+        data: result.data,
+      };
+    }
+    
+    if (Array.isArray(result)) {
+      return {
+        success: true,
+        data: result,
+      };
+    }
+    
+    if (result.data && Array.isArray(result.data)) {
+      return {
+        success: true,
+        data: result.data,
+      };
+    }
+    
+    console.warn("[API] Unexpected user cards response structure:", result);
+    return {
+      success: false,
+      error: {
+        code: "INVALID_RESPONSE",
+        message: "Unexpected response format from server",
+      },
+    };
+  } catch (error: any) {
+    console.error("Get user cards error:", error);
+    const errorMessage = error?.message || "Unknown error";
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: `Failed to fetch user cards: ${errorMessage}`,
+      },
+    };
+  }
+}
+
+/**
+ * Delete a user card
+ */
+export async function deleteUserCard(userCardId: number): Promise<ApiResponse<any>> {
+  try {
+    console.log("[API] Deleting user card:", userCardId);
+    
+    const response = await apiRequest(`/cards/user-cards/${userCardId}/`, {
+      method: "DELETE",
+    });
+
+    console.log("[API] Delete card response status:", response.status);
+    
+    if (response.ok) {
+      let result;
+      try {
+        const text = await response.text();
+        if (text) {
+          result = JSON.parse(text);
+        }
+      } catch {
+        console.log("[API] No JSON body in delete response, treating as success");
+        result = null;
+      }
+
+      if (result && result.success) {
+        return result as ApiSuccessResponse<any>;
+      }
+      return {
+        success: true,
+        data: result || { message: "Card deleted successfully" },
+      };
+    } else {
+      let errorData;
+      try {
+        const text = await response.text();
+        errorData = text ? JSON.parse(text) : null;
+      } catch {
+        errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+      }
+      
+      return {
+        success: false,
+        error: {
+          code: "API_ERROR",
+          message: errorData?.message || errorData?.detail || `Failed to delete card (${response.status})`,
+        },
+      };
+    }
+  } catch (error: any) {
+    console.error("Delete user card error:", error);
+    const errorMessage = error?.message || "Unknown error";
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: `Failed to delete card: ${errorMessage}`,
+      },
+    };
+  }
+}
+
+/**
+ * Add a card to user's wallet
+ */
+export async function addUserCard(cardId: number): Promise<ApiResponse<any>> {
+  try {
+    console.log("[API] Adding card to wallet:", cardId);
+    console.log("[API] CSRF token before request:", csrfToken ? "present" : "missing");
+    
+    // Ensure CSRF token is available before making the request
+    if (!csrfToken) {
+      console.log("[API] CSRF token missing, fetching...");
+      await getCSRFToken();
+      console.log("[API] CSRF token after fetch:", csrfToken ? "obtained" : "still missing");
+    }
+    
+    const response = await apiRequest("/cards/user-cards/", {
+      method: "POST",
+      body: JSON.stringify({
+        card: cardId,
+        is_active: true,
+      }),
+    });
+
+    console.log("[API] Add card response status:", response.status);
+    console.log("[API] Add card response headers:", Object.fromEntries(response.headers.entries()));
+    
+    // Check if response is ok before trying to parse JSON
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { detail: `HTTP ${response.status}: ${response.statusText}` };
+      }
+      console.error("[API] Add card error response:", errorData);
+      
+      // Handle CSRF errors specifically
+      if (response.status === 403 && errorData.detail && errorData.detail.includes("CSRF")) {
+        // Try to get CSRF token again and retry once
+        console.log("[API] CSRF error detected, fetching new token and retrying...");
+        await getCSRFToken();
+        
+        // Retry the request
+        const retryResponse = await apiRequest("/cards/user-cards/", {
+          method: "POST",
+          body: JSON.stringify({
+            card: cardId,
+            is_active: true,
+          }),
+        });
+        
+        if (retryResponse.ok) {
+          const retryResult = await retryResponse.json();
+          if (retryResult.success) {
+            return retryResult as ApiSuccessResponse<any>;
+          }
+          return {
+            success: true,
+            data: retryResult,
+          };
+        } else {
+          const retryError = await retryResponse.json().catch(() => ({ detail: "CSRF token error" }));
+          return {
+            success: false,
+            error: {
+              code: "CSRF_ERROR",
+              message: retryError.detail || retryError.message || "CSRF token validation failed",
+            },
+          };
+        }
+      }
+      
+      // Extract error message from different possible formats
+      let errorMessage = errorData.detail || errorData.message;
+      
+      // Handle Django REST Framework validation errors
+      if (errorData.non_field_errors && Array.isArray(errorData.non_field_errors) && errorData.non_field_errors.length > 0) {
+        errorMessage = errorData.non_field_errors[0];
+      } else if (errorData.card && Array.isArray(errorData.card) && errorData.card.length > 0) {
+        errorMessage = errorData.card[0];
+      } else if (typeof errorData === 'object') {
+        // Try to extract first error from any field
+        const firstErrorKey = Object.keys(errorData).find(key => Array.isArray(errorData[key]) && errorData[key].length > 0);
+        if (firstErrorKey) {
+          errorMessage = Array.isArray(errorData[firstErrorKey]) ? errorData[firstErrorKey][0] : errorData[firstErrorKey];
+        }
+      }
+      
+      if (!errorMessage) {
+        errorMessage = `Failed to add card (${response.status})`;
+      }
+      
+      return {
+        success: false,
+        error: {
+          code: response.status === 401 ? "UNAUTHORIZED" : response.status === 403 ? "FORBIDDEN" : response.status === 400 ? "VALIDATION_ERROR" : "API_ERROR",
+          message: errorMessage,
+          details: errorData,
+        },
+      };
+    }
+    
+    const result = await response.json();
+    console.log("[API] Add card response data:", result);
+
+    if (result.success) {
+      return result as ApiSuccessResponse<any>;
+    }
+    return {
+      success: true,
+      data: result,
+    };
+  } catch (error: any) {
+    console.error("Add card error:", error);
+    console.error("Add card error details:", {
+      message: error?.message,
+      name: error?.name,
+      stack: error?.stack,
+    });
+    const errorMessage = error?.message || "Unknown error";
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: `Failed to add card: ${errorMessage}`,
       },
     };
   }

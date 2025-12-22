@@ -125,10 +125,12 @@ else:
     ]
 
 # Allow cookies from cross-origin requests (needed for session auth)
-SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
 SESSION_COOKIE_DOMAIN = None
+# Use Lax for development - allows cookies to be sent with same-site requests
+# Note: For cross-origin (different ports), we need to ensure same hostname (localhost)
+SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token
 CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS

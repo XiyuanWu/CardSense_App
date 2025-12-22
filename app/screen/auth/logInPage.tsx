@@ -108,12 +108,24 @@ export default function LogInPage() {
         router.push("/(tabs)/dashboard");
       } else {
         // Handle API errors
-        const errorMessage =
-          response.error.details && Object.keys(response.error.details).length > 0
-            ? Object.values(response.error.details)
-                .flat()
-                .join(", ")
-            : response.error.message;
+        const errorResponse = response as any;
+        let errorMessage = errorResponse.error?.message || "Login failed";
+        
+        // Check for details in different possible locations
+        if (errorResponse.error?.details && Object.keys(errorResponse.error.details).length > 0) {
+          errorMessage = Object.values(errorResponse.error.details)
+            .flat()
+            .join(", ");
+        } else if (errorResponse.error?.detail) {
+          errorMessage = errorResponse.error.detail;
+        }
+        
+        // Handle CSRF errors specifically
+        if (errorMessage.includes("CSRF") || errorResponse.error?.code === "CSRF_ERROR") {
+          errorMessage = "Session expired. Please try logging in again.";
+        }
+        
+        console.error("[Login] Login error response:", errorResponse);
         setError(errorMessage);
       }
     } catch (err) {
