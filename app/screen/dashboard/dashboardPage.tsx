@@ -23,6 +23,13 @@ interface Transaction {
   amount: number;
 }
 
+interface Budget {
+  id: string;
+  monthYear: string;
+  budgetAmount: number;
+  spentAmount: number;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -43,34 +50,13 @@ export default function DashboardPage() {
   const rewardsEarned = 5.8;
   const activeBudgets = 0;
   const budgetAlerts = 0;
-  const budgetSpent = 458.5;
-  const budgetTotal = 1000.0;
-  const budgetMonth = "2025.12";
+
+  // Placeholder budgets - will be replaced with backend data
+  // Set to empty array to show empty state, or populate with data to show budget
+  const allBudgets: Budget[] = [];
 
   // Placeholder transactions - will be replaced with backend data
-  const allTransactions: Transaction[] = [
-    {
-      id: "1",
-      merchant: "Amazon",
-      date: "Dec 18, 2025",
-      category: "Online Shopping",
-      amount: 48.59,
-    },
-    {
-      id: "2",
-      merchant: "Walmart",
-      date: "Dec 18, 2025",
-      category: "Groceries",
-      amount: 25.63,
-    },
-    {
-      id: "3",
-      merchant: "Starbuck",
-      date: "Dec 15, 2025",
-      category: "Dining",
-      amount: 5.63,
-    },
-  ];
+  const allTransactions: Transaction[] = [];
 
   useEffect(() => {
     const subscription = Dimensions.addEventListener("change", ({ window }) => {
@@ -106,7 +92,11 @@ export default function DashboardPage() {
   }, [screenHeight, insets.top, insets.bottom]);
 
   const displayedTransactions = allTransactions.slice(0, maxTransactions);
-  const budgetPercentage = (budgetSpent / budgetTotal) * 100;
+  // Get the most recent budget (if any)
+  const mostRecentBudget = allBudgets.length > 0 ? allBudgets[0] : null;
+  const budgetPercentage = mostRecentBudget
+    ? (mostRecentBudget.spentAmount / mostRecentBudget.budgetAmount) * 100
+    : 0;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -131,49 +121,52 @@ export default function DashboardPage() {
             </View>
 
             {/* Rewards Earned */}
-            <View style={[styles.card, styles.cardTall]}>
+            <View style={[styles.card, styles.cardLeft]}>
               <Text style={styles.cardLabel}>Rewards Earned</Text>
               <Text style={styles.cardValue}>${rewardsEarned.toFixed(2)}</Text>
-              <Pressable style={styles.linkContainer} onPress={() => {}}>
-                <Text style={styles.linkText}>View all rewards</Text>
-                <Ionicons name="chevron-forward" size={14} color="#5E17EB" />
-              </Pressable>
             </View>
 
             {/* Active Budgets & Budget Alerts Row */}
             <View style={styles.rowContainer}>
-              <View style={[styles.card, styles.cardTall, styles.cardHalf]}>
+              <View style={[styles.card, styles.cardShort, styles.cardHalf]}>
                 <Text style={styles.cardLabel}>Active Budgets</Text>
                 <Text style={styles.cardValue}>{activeBudgets}</Text>
               </View>
               <View style={styles.rowSpacing} />
-              <View style={[styles.card, styles.cardTall, styles.cardHalf]}>
+              <View style={[styles.card, styles.cardShort, styles.cardHalf]}>
                 <Text style={styles.cardLabel}>Budget Alerts</Text>
                 <Text style={styles.cardValue}>{budgetAlerts}</Text>
               </View>
             </View>
 
             {/* Budgets Status */}
-            <View style={[styles.card, styles.cardTall]}>
+            <View style={[styles.card, styles.transactionsCard]}>
               <Text style={styles.cardLabel}>Budgets Status</Text>
-              <View style={styles.budgetInfoContainer}>
-                <Text style={styles.budgetSubtext}>
-                  Monthly Budget({budgetMonth})
-                </Text>
-                <Text style={styles.budgetAmount}>
-                  ${budgetSpent.toFixed(1)}/${budgetTotal.toFixed(2)}
-                </Text>
-              </View>
-              <View style={styles.progressBarContainer}>
-                <View style={styles.progressBarBackground}>
-                  <View
-                    style={[
-                      styles.progressBarFill,
-                      { width: `${budgetPercentage}%` },
-                    ]}
-                  />
+              {mostRecentBudget === null ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>
+                    You don&apos;t have any budget right now. Go and add first
+                    one!
+                  </Text>
                 </View>
-              </View>
+              ) : (
+                <View style={styles.budgetsList}>
+                  <View style={styles.budgetItem}>
+                    <View style={styles.budgetLeft}>
+                      <Text style={styles.budgetMonthYear}>
+                        {mostRecentBudget.monthYear}
+                      </Text>
+                      <Text style={styles.budgetDetails}>
+                        ${mostRecentBudget.spentAmount.toFixed(2)} / $
+                        {mostRecentBudget.budgetAmount.toFixed(2)}
+                      </Text>
+                    </View>
+                    <Text style={styles.budgetPercentage}>
+                      {budgetPercentage.toFixed(0)}%
+                    </Text>
+                  </View>
+                </View>
+              )}
               <Pressable
                 style={styles.linkContainer}
                 onPress={() => router.push("/(tabs)/budget")}
@@ -269,6 +262,10 @@ const styles = StyleSheet.create({
   cardLeft: {
     alignItems: "flex-start",
   },
+  cardShort: {
+    height: 88,
+    alignItems: "flex-start",
+  },
   cardTall: {
     minHeight: 115,
     alignItems: "flex-start",
@@ -305,40 +302,37 @@ const styles = StyleSheet.create({
     color: "#5E17EB",
     marginRight: 4,
   },
-  budgetInfoContainer: {
+  budgetsList: {
+    width: "100%",
+    flex: 1,
+  },
+  budgetItem: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "100%",
-    marginBottom: 8,
+    alignItems: "center",
+    paddingVertical: 8,
   },
-  budgetSubtext: {
+  budgetLeft: {
+    flex: 1,
+  },
+  budgetMonthYear: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#222222",
+    marginBottom: 4,
+  },
+  budgetDetails: {
     fontSize: 8,
     fontWeight: "600",
     color: "#777777",
-    textTransform: "none",
   },
-  budgetAmount: {
-    fontSize: 8,
+  budgetPercentage: {
+    fontSize: 10,
     fontWeight: "600",
-    color: "#777777",
-  },
-  progressBarContainer: {
-    width: "100%",
-    marginBottom: 8,
-  },
-  progressBarBackground: {
-    height: 8,
-    backgroundColor: "#E9E9E9",
-    borderRadius: 100,
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    height: "100%",
-    backgroundColor: "#5E17EB",
-    borderRadius: 100,
+    color: "#222222",
   },
   transactionsCard: {
-    minHeight: 102,
+    minHeight: 80,
     alignItems: "flex-start",
   },
   transactionsList: {
@@ -377,13 +371,12 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     width: "100%",
-    alignItems: "center",
-    paddingVertical: 20,
+    paddingBottom: 15,
   },
   emptyStateText: {
     fontSize: 10,
     fontWeight: "600",
     color: "#777777",
-    textAlign: "center",
+    textAlign: "left",
   },
 });

@@ -5,10 +5,12 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import TextInputFull from "../../components/textInput/textInputFull";
 import ButtonHalf from "../../components/button/buttonHalf";
+import DropDown from "../../components/textInput/dropDown";
 
 export default function AddBudgetPage() {
   const router = useRouter();
-  const [monthYear, setMonthYear] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
   const [budgetAmount, setBudgetAmount] = useState("");
 
   const handleCancel = () => {
@@ -23,7 +25,7 @@ export default function AddBudgetPage() {
     //     method: 'POST',
     //     headers: { 'Content-Type': 'application/json' },
     //     body: JSON.stringify({
-    //       month_year: monthYear,
+    //       month_year: `${selectedYear}.${selectedMonth}`,
     //       amount: parseFloat(budgetAmount),
     //     }),
     //   });
@@ -61,10 +63,40 @@ export default function AddBudgetPage() {
           {/* Input Fields */}
           <View style={styles.inputsContainer}>
             <View style={styles.inputWrapper}>
-              <TextInputFull
-                placeholder="Month/year"
-                value={monthYear}
-                onChangeText={setMonthYear}
+              <DropDown
+                placeholder="Select Month"
+                items={[
+                  { label: "Jan", value: "Jan" },
+                  { label: "Feb", value: "Feb" },
+                  { label: "Mar", value: "Mar" },
+                  { label: "Apr", value: "Apr" },
+                  { label: "May", value: "May" },
+                  { label: "Jun", value: "Jun" },
+                  { label: "Jul", value: "Jul" },
+                  { label: "Aug", value: "Aug" },
+                  { label: "Sep", value: "Sep" },
+                  { label: "Oct", value: "Oct" },
+                  { label: "Nov", value: "Nov" },
+                  { label: "Dec", value: "Dec" },
+                ]}
+                selectedValue={selectedMonth}
+                onValueChange={setSelectedMonth}
+              />
+            </View>
+            <View style={styles.inputSpacing} />
+            <View style={styles.inputWrapper}>
+              <DropDown
+                placeholder="Select Year"
+                items={[
+                  { label: "2025", value: "2025" },
+                  { label: "2026", value: "2026" },
+                  { label: "2027", value: "2027" },
+                  { label: "2028", value: "2028" },
+                  { label: "2029", value: "2029" },
+                  { label: "2030", value: "2030" },
+                ]}
+                selectedValue={selectedYear}
+                onValueChange={setSelectedYear}
               />
             </View>
             <View style={styles.inputSpacing} />

@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import TextInputFull from "../../components/textInput/textInputFull";
 import ButtonHalf from "../../components/button/buttonHalf";
+import DropDown from "../../components/textInput/dropDown";
 
 export default function AddTransactionsPage() {
   const router = useRouter();
@@ -14,8 +15,48 @@ export default function AddTransactionsPage() {
   const [cardUsed, setCardUsed] = useState("");
   const [notes, setNotes] = useState("");
 
+  // TODO: Replace with backend API call
+  // const fetchUserCards = async () => {
+  //   const response = await fetch('/api/cards/');
+  //   const data = await response.json();
+  //   return data;
+  // };
+
+  // Placeholder categories - will be replaced with backend data
+  const categories = [
+    { label: "Dining", value: "Dining" },
+    { label: "Groceries", value: "Groceries" },
+    { label: "Gas", value: "Gas" },
+    { label: "Shopping", value: "Shopping" },
+    { label: "Online Shopping", value: "Online Shopping" },
+    { label: "Entertainment", value: "Entertainment" },
+    { label: "Travel", value: "Travel" },
+    { label: "Bills", value: "Bills" },
+    { label: "Other", value: "Other" },
+  ];
+
+  // Placeholder user cards - will be replaced with backend data
+  // const userCards = await fetchUserCards();
+  const userCards = [
+    { label: "Chase Sapphire Preferred", value: "chase_sapphire_preferred" },
+    { label: "Boa Customized Cash Rewards", value: "boa_customized_cash" },
+    { label: "Amex Gold", value: "amex_gold" },
+  ];
+
   const handleCancel = () => {
     router.push("/(tabs)/transactions");
+  };
+
+  const handleAmountChange = (text: string) => {
+    // Only allow numbers and decimal point
+    const numericValue = text.replace(/[^0-9.]/g, "");
+    // Ensure only one decimal point
+    const parts = numericValue.split(".");
+    if (parts.length > 2) {
+      setAmount(parts[0] + "." + parts.slice(1).join(""));
+    } else {
+      setAmount(numericValue);
+    }
   };
 
   const handleAdd = async () => {
@@ -77,24 +118,26 @@ export default function AddTransactionsPage() {
               <TextInputFull
                 placeholder="Amount($)"
                 value={amount}
-                onChangeText={setAmount}
+                onChangeText={handleAmountChange}
                 keyboardType="decimal-pad"
               />
             </View>
             <View style={styles.inputSpacing} />
             <View style={styles.inputWrapper}>
-              <TextInputFull
-                placeholder="Category"
-                value={category}
-                onChangeText={setCategory}
+              <DropDown
+                placeholder="Select Category"
+                items={categories}
+                selectedValue={category}
+                onValueChange={setCategory}
               />
             </View>
             <View style={styles.inputSpacing} />
             <View style={styles.inputWrapper}>
-              <TextInputFull
-                placeholder="Card Used(Optional)"
-                value={cardUsed}
-                onChangeText={setCardUsed}
+              <DropDown
+                placeholder="Select Card (Optional)"
+                items={userCards}
+                selectedValue={cardUsed}
+                onValueChange={setCardUsed}
               />
             </View>
             <View style={styles.inputSpacing} />
