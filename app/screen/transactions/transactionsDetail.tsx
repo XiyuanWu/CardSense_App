@@ -1,7 +1,9 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useState, useEffect } from "react";
+import { getTransaction } from "../../utils/api";
 
 interface TransactionDetail {
   id: string;
@@ -14,29 +16,97 @@ interface TransactionDetail {
   rewardPercent: number;
 }
 
+// Category mapping: backend code -> display name
+const categoryMap: Record<string, string> = {
+  DINING: "Dining",
+  GROCERIES: "Groceries",
+  GAS: "Gas",
+  ONLINE_SHOPPING: "Online Shopping",
+  ENTERTAINMENT: "Entertainment",
+  GENERAL_TRAVEL: "General Travel",
+  AIRLINE_TRAVEL: "Airline Travel",
+  HOTEL_TRAVEL: "Hotel Travel",
+  TRANSIT: "Transit",
+  PHARMACY: "Pharmacy",
+  RENT: "Rent",
+  OTHER: "Other",
+  SELECTED_CATEGORIES: "Selected Categories",
+};
+
+// Format date for display
+function formatDate(dateString: string): string {
+  try {
+    const date = new Date(dateString);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  } catch {
+    return dateString;
+  }
+}
+
 export default function TransactionsDetailPage() {
   const router = useRouter();
   const { transactionId } = useLocalSearchParams<{ transactionId: string }>();
+  const [transaction, setTransaction] = useState<TransactionDetail | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // TODO: Replace with backend API call
-  // const fetchTransactionDetail = async (id: string) => {
-  //   const response = await fetch(`/api/transactions/${id}/`);
-  //   const data = await response.json();
-  //   return data;
-  // };
+  useEffect(() => {
+    const fetchTransactionDetail = async () => {
+      if (!transactionId) {
+        Alert.alert("Error", "Transaction ID is missing");
+        router.back();
+        return;
+      }
 
-  // Placeholder data - will be replaced with backend data
-  // When backend is ready, use transactionId from params to fetch the transaction
-  const transaction: TransactionDetail = {
-    id: transactionId || "1",
-    merchant: "Amazon",
-    amount: 48.59,
-    date: "Dec 18, 2025",
-    category: "Online Shopping",
-    cardUsed: "Boa Customized Cash Rewards",
-    rewardEarned: 1.46,
-    rewardPercent: 3,
-  };
+      setLoading(true);
+      try {
+        const response = await getTransaction(transactionId);
+        if (response.success && response.data) {
+          const tx = response.data;
+          const amount = parseFloat(tx.amount);
+          const rewardEarned = parseFloat(tx.actual_reward || "0");
+          const rewardPercent = amount > 0 ? (rewardEarned / amount) * 100 : 0;
+
+          const transactionDetail: TransactionDetail = {
+            id: tx.id.toString(),
+            merchant: tx.merchant,
+            amount: amount,
+            date: formatDate(tx.created_at),
+            category: categoryMap[tx.category] || tx.category,
+            cardUsed: tx.card_actually_used_details
+              ? `${tx.card_actually_used_details.issuer} ${tx.card_actually_used_details.name}`
+              : "No card specified",
+            rewardEarned: rewardEarned,
+            rewardPercent: rewardPercent,
+          };
+
+          setTransaction(transactionDetail);
+        } else {
+          if (!response.success) {
+            const errorMessage = "error" in response ? response.error.message : "Failed to fetch transaction";
+            Alert.alert("Error", errorMessage, [
+              {
+                text: "OK",
+                onPress: () => router.back(),
+              },
+            ]);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching transaction detail:", error);
+        Alert.alert("Error", "An error occurred while loading the transaction", [
+          {
+            text: "OK",
+            onPress: () => router.back(),
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransactionDetail();
+  }, [transactionId, router]);
 
   const DetailRow = ({
     label,
@@ -66,29 +136,39 @@ export default function TransactionsDetailPage() {
           <View style={styles.backButtonPlaceholder} />
         </View>
 
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Summary Card */}
-          <View style={styles.summaryCard}>
-            <Text style={styles.merchantName}>{transaction.merchant}</Text>
-            <Text style={styles.amount}>${transaction.amount.toFixed(2)}</Text>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#5E17EB" />
           </View>
+        ) : transaction ? (
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Summary Card */}
+            <View style={styles.summaryCard}>
+              <Text style={styles.merchantName}>{transaction.merchant}</Text>
+              <Text style={styles.amount}>${transaction.amount.toFixed(2)}</Text>
+            </View>
 
-          {/* Details Card */}
-          <View style={styles.detailsCard}>
-            <DetailRow label="Transactions Date" value={transaction.date} />
-            <DetailRow label="Category" value={transaction.category} />
-            <DetailRow label="Card Used" value={transaction.cardUsed} />
-            <DetailRow
-              label="Reward Earned"
-              value={`$${transaction.rewardEarned.toFixed(2)} (${transaction.rewardPercent}%)`}
-              isLast
-            />
+            {/* Details Card */}
+            <View style={styles.detailsCard}>
+              <DetailRow label="Transactions Date" value={transaction.date} />
+              <DetailRow label="Category" value={transaction.category} />
+              <DetailRow label="Card Used" value={transaction.cardUsed} />
+              <DetailRow
+                label="Reward Earned"
+                value={`$${transaction.rewardEarned.toFixed(2)} (${transaction.rewardPercent.toFixed(2)}%)`}
+                isLast
+              />
+            </View>
+          </ScrollView>
+        ) : (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Transaction not found</Text>
           </View>
-        </ScrollView>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -191,5 +271,20 @@ const styles = StyleSheet.create({
     color: "#777777",
     textAlign: "right",
     width: 163,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#777777",
   },
 });

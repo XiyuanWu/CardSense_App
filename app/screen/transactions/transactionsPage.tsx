@@ -1,9 +1,10 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-// import { useRouter } from 'expo-router'; // Will be used when add transaction route is set up
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useState, useCallback } from "react";
 import ButtonSeventy from "@/components/button/buttonSeventy";
+import { getTransactions, TransactionData } from "../../utils/api";
 
 interface Transaction {
   id: string;
@@ -19,19 +20,96 @@ interface TransactionGroup {
   transactions: Transaction[];
 }
 
+// Category mapping: backend code -> display name
+const categoryMap: Record<string, string> = {
+  DINING: "Dining",
+  GROCERIES: "Groceries",
+  GAS: "Gas",
+  ONLINE_SHOPPING: "Online Shopping",
+  ENTERTAINMENT: "Entertainment",
+  GENERAL_TRAVEL: "General Travel",
+  AIRLINE_TRAVEL: "Airline Travel",
+  HOTEL_TRAVEL: "Hotel Travel",
+  TRANSIT: "Transit",
+  PHARMACY: "Pharmacy",
+  RENT: "Rent",
+  OTHER: "Other",
+  SELECTED_CATEGORIES: "Selected Categories",
+};
+
+// Format date for display
+function formatDate(dateString: string): string {
+  try {
+    const date = new Date(dateString);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  } catch {
+    return dateString;
+  }
+}
+
+// Group transactions by date
+function groupTransactionsByDate(transactions: Transaction[]): TransactionGroup[] {
+  const groups: Record<string, Transaction[]> = {};
+  
+  transactions.forEach((transaction) => {
+    const dateKey = transaction.date;
+    if (!groups[dateKey]) {
+      groups[dateKey] = [];
+    }
+    groups[dateKey].push(transaction);
+  });
+
+  // Convert to array and sort by date (newest first)
+  return Object.keys(groups)
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
+    .map((date) => ({
+      date: formatDate(date),
+      transactions: groups[date],
+    }));
+}
+
 export default function TransactionsPage() {
   const router = useRouter();
+  const [transactionGroups, setTransactionGroups] = useState<TransactionGroup[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // TODO: Replace with backend API call
-  // const fetchTransactions = async () => {
-  //   const response = await fetch('/api/transactions/');
-  //   const data = await response.json();
-  //   return data;
-  // };
+  const fetchTransactions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await getTransactions();
+      if (response.success && response.data) {
+        // Transform backend data to frontend format
+        const transformedTransactions: Transaction[] = response.data.map((tx: TransactionData) => ({
+          id: tx.id.toString(),
+          merchant: tx.merchant,
+          date: tx.created_at,
+          category: categoryMap[tx.category] || tx.category,
+          amount: parseFloat(tx.amount),
+          earned: parseFloat(tx.actual_reward || "0"),
+        }));
 
-  // Placeholder data - will be replaced with backend data
-  // Set to empty array to show empty state, or populate with data to show transactions
-  const transactionGroups: TransactionGroup[] = [];
+        // Group by date
+        const grouped = groupTransactionsByDate(transformedTransactions);
+        setTransactionGroups(grouped);
+      } else {
+        console.error("Failed to fetch transactions");
+        setTransactionGroups([]);
+      }
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      setTransactionGroups([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch transactions when page is focused (e.g., after adding a transaction)
+  useFocusEffect(
+    useCallback(() => {
+      fetchTransactions();
+    }, [fetchTransactions])
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -49,8 +127,12 @@ export default function TransactionsPage() {
           </Pressable>
         </View>
 
-        {/* Transactions List or Empty State */}
-        {transactionGroups.length === 0 ? (
+        {/* Loading State */}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#5E17EB" />
+          </View>
+        ) : transactionGroups.length === 0 ? (
           <View style={styles.emptyStateContainer}>
             <View style={styles.emptyStateContent}>
               <Text style={styles.emptyStateTitle}>
@@ -237,5 +319,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#FFFFFF",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

@@ -893,3 +893,349 @@ export async function addUserCard(cardId: number): Promise<ApiResponse<any>> {
   }
 }
 
+/**
+ * Transaction-related API functions
+ */
+
+export interface TransactionData {
+  id: number;
+  merchant: string;
+  amount: string;
+  category: string;
+  card_actually_used?: number | null;
+  card_actually_used_details?: {
+    id: number;
+    name: string;
+    issuer: string;
+  } | null;
+  recommended_card?: number | null;
+  recommended_card_details?: {
+    id: number;
+    name: string;
+    issuer: string;
+  } | null;
+  notes?: string | null;
+  actual_reward: string;
+  optimal_reward: string;
+  missed_reward: string;
+  used_optimal_card: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CardRecommendationData {
+  category: string;
+  amount: number;
+  recommendation: {
+    best_card: {
+      card_id: number;
+      card_name: string;
+    } | null;
+    multiplier: number;
+    rationale: string;
+    top3: {
+      card_id: number;
+      card_name: string;
+      multiplier: number;
+    }[];
+  };
+}
+
+/**
+ * Create a new transaction
+ */
+export async function createTransaction(data: {
+  merchant: string;
+  amount: number;
+  category: string;
+  card_actually_used?: number | null;
+  notes?: string | null;
+}): Promise<ApiResponse<TransactionData>> {
+  try {
+    console.log("[API] Creating transaction...");
+    
+    const response = await apiRequest("/transactions/transactions/", {
+      method: "POST",
+      body: JSON.stringify({
+        merchant: data.merchant,
+        amount: data.amount,
+        category: data.category,
+        card_actually_used: data.card_actually_used || null,
+        notes: data.notes || null,
+      }),
+    });
+
+    console.log("[API] Create transaction response status:", response.status);
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+      }
+      console.error("[API] Create transaction error response:", errorData);
+      return {
+        success: false,
+        error: {
+          code: response.status === 401 ? "UNAUTHORIZED" : response.status === 400 ? "VALIDATION_ERROR" : "API_ERROR",
+          message: errorData.message || errorData.detail || `Failed to create transaction (${response.status})`,
+          details: errorData,
+        },
+      };
+    }
+
+    const result = await response.json();
+    console.log("[API] Create transaction response data:", result);
+
+    if (result.success && result.data) {
+      return {
+        success: true,
+        data: result.data,
+        message: result.message,
+      };
+    }
+
+    if (result.data) {
+      return {
+        success: true,
+        data: result.data,
+      };
+    }
+
+    console.warn("[API] Unexpected create transaction response structure:", result);
+    return {
+      success: false,
+      error: {
+        code: "INVALID_RESPONSE",
+        message: "Unexpected response format from server",
+      },
+    };
+  } catch (error: any) {
+    console.error("Create transaction error:", error);
+    const errorMessage = error?.message || "Unknown error";
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: `Failed to create transaction: ${errorMessage}`,
+      },
+    };
+  }
+}
+
+/**
+ * Get a single transaction by ID
+ */
+export async function getTransaction(transactionId: number | string): Promise<ApiResponse<TransactionData>> {
+  try {
+    console.log("[API] Fetching transaction:", transactionId);
+    
+    const response = await apiRequest(`/transactions/transactions/${transactionId}/`, {
+      method: "GET",
+    });
+
+    console.log("[API] Get transaction response status:", response.status);
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+      }
+      console.error("[API] Get transaction error response:", errorData);
+      return {
+        success: false,
+        error: {
+          code: response.status === 401 ? "UNAUTHORIZED" : response.status === 404 ? "NOT_FOUND" : "API_ERROR",
+          message: errorData.message || errorData.detail || `Failed to fetch transaction (${response.status})`,
+          details: errorData,
+        },
+      };
+    }
+
+    const result = await response.json();
+    console.log("[API] Get transaction response data:", result);
+
+    if (result.success && result.data) {
+      return {
+        success: true,
+        data: result.data,
+      };
+    }
+
+    // Handle case where backend returns transaction directly
+    if (result.id) {
+      return {
+        success: true,
+        data: result,
+      };
+    }
+
+    console.warn("[API] Unexpected get transaction response structure:", result);
+    return {
+      success: false,
+      error: {
+        code: "INVALID_RESPONSE",
+        message: "Unexpected response format from server",
+      },
+    };
+  } catch (error: any) {
+    console.error("Get transaction error:", error);
+    const errorMessage = error?.message || "Unknown error";
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: `Failed to fetch transaction: ${errorMessage}`,
+      },
+    };
+  }
+}
+
+/**
+ * Get all transactions for the current user
+ */
+export async function getTransactions(): Promise<ApiResponse<TransactionData[]>> {
+  try {
+    console.log("[API] Fetching transactions...");
+    
+    const response = await apiRequest("/transactions/transactions/", {
+      method: "GET",
+    });
+
+    console.log("[API] Get transactions response status:", response.status);
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+      }
+      console.error("[API] Get transactions error response:", errorData);
+      return {
+        success: false,
+        error: {
+          code: response.status === 401 ? "UNAUTHORIZED" : "API_ERROR",
+          message: errorData.message || errorData.detail || `Failed to fetch transactions (${response.status})`,
+          details: errorData,
+        },
+      };
+    }
+
+    const result = await response.json();
+    console.log("[API] Get transactions response data:", result);
+
+    if (result.success && result.data) {
+      return {
+        success: true,
+        data: result.data,
+      };
+    }
+
+    if (Array.isArray(result)) {
+      return {
+        success: true,
+        data: result,
+      };
+    }
+
+    if (result.data && Array.isArray(result.data)) {
+      return {
+        success: true,
+        data: result.data,
+      };
+    }
+
+    console.warn("[API] Unexpected get transactions response structure:", result);
+    return {
+      success: false,
+      error: {
+        code: "INVALID_RESPONSE",
+        message: "Unexpected response format from server",
+      },
+    };
+  } catch (error: any) {
+    console.error("Get transactions error:", error);
+    const errorMessage = error?.message || "Unknown error";
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: `Failed to fetch transactions: ${errorMessage}`,
+      },
+    };
+  }
+}
+
+/**
+ * Get card recommendation for a category
+ */
+export async function getCardRecommendation(data: {
+  category: string;
+  amount?: number;
+}): Promise<ApiResponse<CardRecommendationData>> {
+  try {
+    console.log("[API] Getting card recommendation for category:", data.category);
+    
+    const response = await apiRequest("/transactions/recommend-card/", {
+      method: "POST",
+      body: JSON.stringify({
+        category: data.category,
+        amount: data.amount || 0,
+      }),
+    });
+
+    console.log("[API] Card recommendation response status:", response.status);
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+      }
+      console.error("[API] Card recommendation error response:", errorData);
+      return {
+        success: false,
+        error: {
+          code: response.status === 401 ? "UNAUTHORIZED" : "API_ERROR",
+          message: errorData.error || errorData.message || errorData.detail || `Failed to get card recommendation (${response.status})`,
+          details: errorData,
+        },
+      };
+    }
+
+    const result = await response.json();
+    console.log("[API] Card recommendation response data:", result);
+
+    if (result.success && result.data) {
+      return {
+        success: true,
+        data: result.data,
+      };
+    }
+
+    console.warn("[API] Unexpected card recommendation response structure:", result);
+    return {
+      success: false,
+      error: {
+        code: "INVALID_RESPONSE",
+        message: "Unexpected response format from server",
+      },
+    };
+  } catch (error: any) {
+    console.error("Get card recommendation error:", error);
+    const errorMessage = error?.message || "Unknown error";
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: `Failed to get card recommendation: ${errorMessage}`,
+      },
+    };
+  }
+}
+

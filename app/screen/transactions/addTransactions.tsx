@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, TextInput } from "react-native";
+import { View, Text, StyleSheet, Pressable, TextInput, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import TextInputFull from "../../components/textInput/textInputFull";
 import ButtonHalf from "../../components/button/buttonHalf";
 import DropDown from "../../components/textInput/dropDown";
+import { getUserCards, createTransaction, getCardRecommendation } from "../../utils/api";
 
 export default function AddTransactionsPage() {
   const router = useRouter();
@@ -15,57 +16,87 @@ export default function AddTransactionsPage() {
   const [cardUsed, setCardUsed] = useState("");
   const [notes, setNotes] = useState("");
   const [bestCard, setBestCard] = useState("");
+  const [userCards, setUserCards] = useState<{ label: string; value: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingRecommendation, setLoadingRecommendation] = useState(false);
 
-  // TODO: Replace with backend API call
-  // const fetchUserCards = async () => {
-  //   const response = await fetch('/api/cards/');
-  //   const data = await response.json();
-  //   return data;
-  // };
-
-  // Placeholder categories - will be replaced with backend data
+  // Category mapping: frontend display -> backend value
   const categories = [
-    { label: "Dining", value: "Dining" },
-    { label: "Groceries", value: "Groceries" },
-    { label: "Gas", value: "Gas" },
-    { label: "Shopping", value: "Shopping" },
-    { label: "Online Shopping", value: "Online Shopping" },
-    { label: "Entertainment", value: "Entertainment" },
-    { label: "Travel", value: "Travel" },
-    { label: "Bills", value: "Bills" },
-    { label: "Other", value: "Other" },
+    { label: "Dining", value: "DINING" },
+    { label: "Groceries", value: "GROCERIES" },
+    { label: "Gas", value: "GAS" },
+    { label: "Online Shopping", value: "ONLINE_SHOPPING" },
+    { label: "Entertainment", value: "ENTERTAINMENT" },
+    { label: "General Travel", value: "GENERAL_TRAVEL" },
+    { label: "Airline Travel", value: "AIRLINE_TRAVEL" },
+    { label: "Hotel Travel", value: "HOTEL_TRAVEL" },
+    { label: "Transit", value: "TRANSIT" },
+    { label: "Pharmacy", value: "PHARMACY" },
+    { label: "Rent", value: "RENT" },
+    { label: "Other", value: "OTHER" },
   ];
 
-  // Placeholder user cards - will be replaced with backend data
-  // const userCards = await fetchUserCards();
-  const userCards = [
-    { label: "Chase Sapphire Preferred", value: "chase_sapphire_preferred" },
-    { label: "Boa Customized Cash Rewards", value: "boa_customized_cash" },
-    { label: "Amex Gold", value: "amex_gold" },
-  ];
+  // Fetch user cards on mount
+  useEffect(() => {
+    const fetchUserCards = async () => {
+      try {
+        const response = await getUserCards();
+        if (response.success && response.data) {
+          const cards = response.data
+            .filter((card) => card.is_active)
+            .map((card) => ({
+              label: card.card_name || `Card ${card.card_id}`,
+              value: card.card_id.toString(),
+            }));
+          setUserCards(cards);
+        } else {
+          if (!response.success) {
+            console.error("Failed to fetch user cards:", "error" in response ? response.error : "Unknown error");
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user cards:", error);
+      }
+    };
 
-  // TODO: Replace with backend API call
-  // const getBestCard = async (category: string) => {
-  //   const response = await fetch(`/api/transactions/best-card/?category=${category}`);
-  //   const data = await response.json();
-  //   return data.card_name;
-  // };
+    fetchUserCards();
+  }, []);
 
   // Update best card recommendation when category changes
   useEffect(() => {
     if (category) {
-      // Placeholder - will fetch from backend based on category
-      setBestCard("Chase Sapphire Preferred");
-      // TODO: Replace with backend API call
-      // const fetchBestCard = async () => {
-      //   const card = await getBestCard(category);
-      //   setBestCard(card);
-      // };
-      // fetchBestCard();
+      setLoadingRecommendation(true);
+      const fetchBestCard = async () => {
+        try {
+          const response = await getCardRecommendation({
+            category: category,
+            amount: parseFloat(amount) || 0,
+          });
+          if (response.success && response.data) {
+            const recommendation = response.data.recommendation;
+            if (recommendation.best_card) {
+              setBestCard(recommendation.best_card.card_name);
+            } else {
+              setBestCard("No recommendation available");
+            }
+          } else {
+            if (!response.success) {
+              console.error("Failed to get card recommendation:", "error" in response ? response.error : "Unknown error");
+            }
+            setBestCard("Unable to get recommendation");
+          }
+        } catch (error) {
+          console.error("Error fetching card recommendation:", error);
+          setBestCard("Error loading recommendation");
+        } finally {
+          setLoadingRecommendation(false);
+        }
+      };
+      fetchBestCard();
     } else {
       setBestCard("");
     }
-  }, [category]);
+  }, [category, amount]);
 
   const handleCancel = () => {
     router.push("/(tabs)/transactions");
@@ -84,28 +115,51 @@ export default function AddTransactionsPage() {
   };
 
   const handleAdd = async () => {
-    // TODO: Replace with backend API call
-    // const addTransaction = async () => {
-    //   const response = await fetch('/api/transactions/', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({
-    //       merchant_name: merchantName,
-    //       amount: parseFloat(amount),
-    //       category: category,
-    //       card_used: cardUsed || null,
-    //       notes: notes || null,
-    //     }),
-    //   });
-    //   const data = await response.json();
-    //   return data;
-    // };
+    // Validate required fields
+    if (!merchantName.trim()) {
+      Alert.alert("Error", "Please enter a merchant name");
+      return;
+    }
+    if (!amount || parseFloat(amount) <= 0) {
+      Alert.alert("Error", "Please enter a valid amount");
+      return;
+    }
+    if (!category) {
+      Alert.alert("Error", "Please select a category");
+      return;
+    }
 
-    // Placeholder: Call backend API
-    // await addTransaction();
+    setLoading(true);
+    try {
+      const response = await createTransaction({
+        merchant: merchantName.trim(),
+        amount: parseFloat(amount),
+        category: category,
+        card_actually_used: cardUsed ? parseInt(cardUsed) : null,
+        notes: notes.trim() || null,
+      });
 
-    // Navigate back to transactions page after adding
-    router.push("/(tabs)/transactions");
+      if (response.success) {
+        // Clear all form fields
+        setMerchantName("");
+        setAmount("");
+        setCategory("");
+        setCardUsed("");
+        setNotes("");
+        setBestCard("");
+        
+        // Navigate back to transactions page - it will auto-refresh due to useFocusEffect
+        router.push("/(tabs)/transactions");
+      } else {
+        const errorMessage = "error" in response ? response.error.message : "Failed to add transaction";
+        Alert.alert("Error", errorMessage);
+      }
+    } catch (error: any) {
+      console.error("Error creating transaction:", error);
+      Alert.alert("Error", "An error occurred while adding the transaction");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -186,7 +240,9 @@ export default function AddTransactionsPage() {
                 Base on your selection, the best card for this category is:
               </Text>
               <View style={styles.bestCardBox}>
-                <Text style={styles.bestCardName}>{bestCard}</Text>
+                <Text style={styles.bestCardName}>
+                  {loadingRecommendation ? "Loading..." : bestCard || "No recommendation"}
+                </Text>
               </View>
             </View>
           )}
@@ -203,9 +259,10 @@ export default function AddTransactionsPage() {
               }}
               button2={{
                 color: "#5E17EB",
-                text: "Add",
+                text: loading ? "Adding..." : "Add",
                 textColor: "#FFFFFF",
                 onPress: handleAdd,
+                disabled: loading,
               }}
             />
           </View>
