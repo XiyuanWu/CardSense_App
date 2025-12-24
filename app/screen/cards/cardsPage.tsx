@@ -1,11 +1,26 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert, Platform } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Platform,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useCallback } from "react";
 import ButtonSeventy from "@/components/button/buttonSeventy";
 import Card from "@/components/cards/card";
-import { getUserCards, deleteUserCard, getAvailableCards, UserCardData, CardData } from "../../utils/api";
+import {
+  getUserCards,
+  deleteUserCard,
+  getAvailableCards,
+  UserCardData,
+  CardData,
+} from "@/utils/api";
 
 interface UserCard {
   id: string;
@@ -27,7 +42,7 @@ export default function CardsPage() {
   useFocusEffect(
     useCallback(() => {
       fetchUserCards();
-    }, [])
+    }, []),
   );
 
   const fetchUserCards = async () => {
@@ -41,23 +56,30 @@ export default function CardsPage() {
         // We need to get full card details for each user card
         // First, get all available cards to match with user cards
         const cardsResponse = await getAvailableCards();
-        const allCards: CardData[] = cardsResponse.success && cardsResponse.data ? cardsResponse.data : [];
+        const allCards: CardData[] =
+          cardsResponse.success && cardsResponse.data ? cardsResponse.data : [];
 
         // Map user cards with full card details
         const mappedCards: UserCard[] = response.data
           .filter((userCard: UserCardData) => userCard.is_active) // Only show active cards
           .map((userCard: UserCardData) => {
             // Find the full card details
-            const cardDetails = allCards.find((c: CardData) => c.id === userCard.card_id || c.id === userCard.card);
-            
+            const cardDetails = allCards.find(
+              (c: CardData) =>
+                c.id === userCard.card_id || c.id === userCard.card,
+            );
+
             if (cardDetails) {
               // Format rewards from reward_rules
               const rewards: string[] = [];
-              if (cardDetails.reward_rules && cardDetails.reward_rules.length > 0) {
+              if (
+                cardDetails.reward_rules &&
+                cardDetails.reward_rules.length > 0
+              ) {
                 cardDetails.reward_rules.forEach((rule: any) => {
                   if (rule.multiplier && rule.category) {
-                    const categories = Array.isArray(rule.category) 
-                      ? rule.category.join(", ") 
+                    const categories = Array.isArray(rule.category)
+                      ? rule.category.join(", ")
                       : rule.category;
                     rewards.push(`${rule.multiplier}x on ${categories}`);
                   }
@@ -83,14 +105,20 @@ export default function CardsPage() {
                 cardName: cardDetails.name,
                 annualFee: `$${cardDetails.annual_fee}`,
                 ftf: cardDetails.ftf ? "Yes" : "No",
-                rewards: rewards.length > 0 ? rewards : ["No rewards information available"],
+                rewards:
+                  rewards.length > 0
+                    ? rewards
+                    : ["No rewards information available"],
               };
             } else {
               // Fallback if card details not found - use card_name from userCard
               return {
                 id: userCard.id.toString(),
-                bankName: userCard.card_name.split("(")[1]?.replace(")", "") || "Unknown",
-                cardName: userCard.card_name.split("(")[0]?.trim() || "Unknown Card",
+                bankName:
+                  userCard.card_name.split("(")[1]?.replace(")", "") ||
+                  "Unknown",
+                cardName:
+                  userCard.card_name.split("(")[0]?.trim() || "Unknown Card",
                 annualFee: "N/A",
                 ftf: "N/A",
                 rewards: ["Card details not available"],
@@ -120,28 +148,38 @@ export default function CardsPage() {
       return;
     }
 
-    console.log("[CardsPage] Showing confirmation dialog for card ID:", userCardId);
-    
+    console.log(
+      "[CardsPage] Showing confirmation dialog for card ID:",
+      userCardId,
+    );
+
     // For web, use browser confirm dialog; for mobile, use Alert.alert
     if (Platform.OS === "web") {
-      const confirmed = confirm("Are you sure you want to remove this card from your wallet?");
+      const confirmed = confirm(
+        "Are you sure you want to remove this card from your wallet?",
+      );
       if (!confirmed) {
         console.log("[CardsPage] Delete cancelled");
         return;
       }
-      
+
       console.log("[CardsPage] Delete confirmed, proceeding with deletion");
       setDeletingCardId(id);
 
       try {
-        console.log("[CardsPage] Attempting to delete card with ID:", userCardId);
+        console.log(
+          "[CardsPage] Attempting to delete card with ID:",
+          userCardId,
+        );
         const response = await deleteUserCard(userCardId);
         console.log("[CardsPage] Delete response:", response);
 
         if (response.success) {
-          console.log("[CardsPage] Delete successful, showing message and refreshing");
+          console.log(
+            "[CardsPage] Delete successful, showing message and refreshing",
+          );
           alert("Card deleted");
-          
+
           // Refresh the cards list (card will disappear)
           await fetchUserCards();
           console.log("[CardsPage] Cards list refreshed after deletion");
@@ -175,21 +213,30 @@ export default function CardsPage() {
             text: "Delete",
             style: "destructive",
             onPress: async () => {
-              console.log("[CardsPage] Delete confirmed, proceeding with deletion");
+              console.log(
+                "[CardsPage] Delete confirmed, proceeding with deletion",
+              );
               setDeletingCardId(id);
 
               try {
-                console.log("[CardsPage] Attempting to delete card with ID:", userCardId);
+                console.log(
+                  "[CardsPage] Attempting to delete card with ID:",
+                  userCardId,
+                );
                 const response = await deleteUserCard(userCardId);
                 console.log("[CardsPage] Delete response:", response);
 
                 if (response.success) {
-                  console.log("[CardsPage] Delete successful, showing message and refreshing");
+                  console.log(
+                    "[CardsPage] Delete successful, showing message and refreshing",
+                  );
                   Alert.alert("Card Deleted", "Card deleted");
-                  
+
                   // Refresh the cards list (card will disappear)
                   await fetchUserCards();
-                  console.log("[CardsPage] Cards list refreshed after deletion");
+                  console.log(
+                    "[CardsPage] Cards list refreshed after deletion",
+                  );
                 } else {
                   const errorResponse = response as any;
                   const errorMessage =
@@ -199,17 +246,19 @@ export default function CardsPage() {
                 }
               } catch (err) {
                 console.error("[CardsPage] Error deleting card:", err);
-                Alert.alert("Error", "An unexpected error occurred. Please try again.");
+                Alert.alert(
+                  "Error",
+                  "An unexpected error occurred. Please try again.",
+                );
               } finally {
                 setDeletingCardId(null);
               }
             },
           },
-        ]
+        ],
       );
     }
   };
-
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -280,12 +329,20 @@ export default function CardsPage() {
                     rewards={card.rewards}
                     iconType="-"
                     onPress={() => {
-                      console.log("[CardsPage] Card delete button pressed for card ID:", card.id);
-                      console.log("[CardsPage] Current deletingCardId:", deletingCardId);
+                      console.log(
+                        "[CardsPage] Card delete button pressed for card ID:",
+                        card.id,
+                      );
+                      console.log(
+                        "[CardsPage] Current deletingCardId:",
+                        deletingCardId,
+                      );
                       if (deletingCardId !== card.id) {
                         handleDelete(card.id);
                       } else {
-                        console.log("[CardsPage] Delete already in progress for this card");
+                        console.log(
+                          "[CardsPage] Delete already in progress for this card",
+                        );
                       }
                     }}
                   />

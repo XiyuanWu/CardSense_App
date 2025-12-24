@@ -1,10 +1,19 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert, Platform } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Platform,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import ButtonSeventy from "@/components/button/buttonSeventy";
 import { useCallback, useState } from "react";
-import { getBudgets, BudgetListItem, deleteBudget } from "../../utils/api";
+import { getBudgets, BudgetListItem, deleteBudget } from "@/utils/api";
 
 interface Budget {
   id: string;
@@ -76,7 +85,7 @@ export default function BudgetPage() {
   useFocusEffect(
     useCallback(() => {
       fetchBudgets();
-    }, [fetchBudgets])
+    }, [fetchBudgets]),
   );
 
   const handleDelete = (budget: Budget) => {
@@ -92,14 +101,17 @@ export default function BudgetPage() {
           }
           await fetchBudgets();
         } else {
-          const msg = "error" in res ? res.error.message : "Failed to delete budget";
-          if (Platform.OS === "web" && typeof window !== "undefined") window.alert(msg);
+          const msg =
+            "error" in res ? res.error.message : "Failed to delete budget";
+          if (Platform.OS === "web" && typeof window !== "undefined")
+            window.alert(msg);
           else Alert.alert("Error", msg);
         }
       } catch (e) {
         console.error("[BudgetPage] Delete failed:", e);
         const msg = "An error occurred while deleting the budget";
-        if (Platform.OS === "web" && typeof window !== "undefined") window.alert(msg);
+        if (Platform.OS === "web" && typeof window !== "undefined")
+          window.alert(msg);
         else Alert.alert("Error", msg);
       } finally {
         setLoading(false);
@@ -107,15 +119,25 @@ export default function BudgetPage() {
     };
 
     if (Platform.OS === "web" && typeof window !== "undefined") {
-      const ok = window.confirm("Delete this budget? This action cannot be undone.");
+      const ok = window.confirm(
+        "Delete this budget? This action cannot be undone.",
+      );
       if (ok) void confirmAndDelete();
       return;
     }
 
-    Alert.alert("Delete Budget", "Delete this budget? This action cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => void confirmAndDelete() },
-    ]);
+    Alert.alert(
+      "Delete Budget",
+      "Delete this budget? This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => void confirmAndDelete(),
+        },
+      ],
+    );
   };
 
   return (

@@ -1,17 +1,29 @@
-import { View, Text, StyleSheet, Image, Pressable, ActivityIndicator, Platform } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  Pressable,
+  ActivityIndicator,
+  Platform,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import ButtonFull from "../../components/button/buttonFull";
 import TextInputFull from "../../components/textInput/textInputFull";
-import { loginUser } from "../../utils/api";
+import { loginUser } from "@/utils/api";
 
 // Storage utility for "Remember me" functionality
 const REMEMBER_ME_KEY = "@CardSense:rememberedEmail";
 
 async function getRememberedEmail(): Promise<string | null> {
   try {
-    if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+    if (
+      Platform.OS === "web" &&
+      typeof window !== "undefined" &&
+      window.localStorage
+    ) {
       return window.localStorage.getItem(REMEMBER_ME_KEY);
     }
     // For React Native, we can add AsyncStorage support later if needed
@@ -24,7 +36,11 @@ async function getRememberedEmail(): Promise<string | null> {
 
 async function setRememberedEmail(email: string | null): Promise<void> {
   try {
-    if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+    if (
+      Platform.OS === "web" &&
+      typeof window !== "undefined" &&
+      window.localStorage
+    ) {
       if (email) {
         window.localStorage.setItem(REMEMBER_ME_KEY, email);
       } else {
@@ -110,21 +126,27 @@ export default function LogInPage() {
         // Handle API errors
         const errorResponse = response as any;
         let errorMessage = errorResponse.error?.message || "Login failed";
-        
+
         // Check for details in different possible locations
-        if (errorResponse.error?.details && Object.keys(errorResponse.error.details).length > 0) {
+        if (
+          errorResponse.error?.details &&
+          Object.keys(errorResponse.error.details).length > 0
+        ) {
           errorMessage = Object.values(errorResponse.error.details)
             .flat()
             .join(", ");
         } else if (errorResponse.error?.detail) {
           errorMessage = errorResponse.error.detail;
         }
-        
+
         // Handle CSRF errors specifically
-        if (errorMessage.includes("CSRF") || errorResponse.error?.code === "CSRF_ERROR") {
+        if (
+          errorMessage.includes("CSRF") ||
+          errorResponse.error?.code === "CSRF_ERROR"
+        ) {
           errorMessage = "Session expired. Please try logging in again.";
         }
-        
+
         console.error("[Login] Login error response:", errorResponse);
         setError(errorMessage);
       }

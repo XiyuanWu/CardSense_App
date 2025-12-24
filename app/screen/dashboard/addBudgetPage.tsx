@@ -1,4 +1,11 @@
-import { View, Text, StyleSheet, Pressable, Alert, Platform } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Alert,
+  Platform,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useRouter } from "expo-router";
@@ -6,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import TextInputFull from "../../components/textInput/textInputFull";
 import ButtonHalf from "../../components/button/buttonHalf";
 import DropDown from "../../components/textInput/dropDown";
-import { createBudget } from "../../utils/api";
+import { createBudget } from "@/utils/api";
 
 export default function AddBudgetPage() {
   const router = useRouter();
@@ -35,14 +42,16 @@ export default function AddBudgetPage() {
   const handleAdd = async () => {
     if (!selectedMonth || !selectedYear) {
       const msg = "Please select month and year";
-      if (Platform.OS === "web" && typeof window !== "undefined") window.alert(msg);
+      if (Platform.OS === "web" && typeof window !== "undefined")
+        window.alert(msg);
       else Alert.alert("Error", msg);
       return;
     }
     const amountNum = parseFloat(budgetAmount);
     if (!budgetAmount || Number.isNaN(amountNum) || amountNum <= 0) {
       const msg = "Please enter a valid budget amount";
-      if (Platform.OS === "web" && typeof window !== "undefined") window.alert(msg);
+      if (Platform.OS === "web" && typeof window !== "undefined")
+        window.alert(msg);
       else Alert.alert("Error", msg);
       return;
     }
@@ -66,7 +75,10 @@ export default function AddBudgetPage() {
 
     setLoading(true);
     try {
-      const res = await createBudget({ amount: amountNum, year_month: yearMonth });
+      const res = await createBudget({
+        amount: amountNum,
+        year_month: yearMonth,
+      });
       if (res.success) {
         // clear form
         setSelectedMonth("");
@@ -75,14 +87,17 @@ export default function AddBudgetPage() {
         // go back to list; list will refresh on focus
         router.push("/(tabs)/budget");
       } else {
-        const msg = "error" in res ? res.error.message : "Failed to create budget";
-        if (Platform.OS === "web" && typeof window !== "undefined") window.alert(msg);
+        const msg =
+          "error" in res ? res.error.message : "Failed to create budget";
+        if (Platform.OS === "web" && typeof window !== "undefined")
+          window.alert(msg);
         else Alert.alert("Error", msg);
       }
     } catch (e) {
       console.error("[AddBudget] create failed:", e);
       const msg = "An error occurred while creating the budget";
-      if (Platform.OS === "web" && typeof window !== "undefined") window.alert(msg);
+      if (Platform.OS === "web" && typeof window !== "undefined")
+        window.alert(msg);
       else Alert.alert("Error", msg);
     } finally {
       setLoading(false);

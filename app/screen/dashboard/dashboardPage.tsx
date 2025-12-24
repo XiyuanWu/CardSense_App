@@ -14,7 +14,13 @@ import {
 import { useState, useEffect, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
-import { getTransactions, TransactionData, getBudgets, BudgetListItem, getDashboardSummary } from "../../utils/api";
+import {
+  getTransactions,
+  TransactionData,
+  getBudgets,
+  BudgetListItem,
+  getDashboardSummary,
+} from "@/utils/api";
 
 const CATEGORY_MAP: Record<string, string> = {
   DINING: "Dining",
@@ -35,7 +41,20 @@ const CATEGORY_MAP: Record<string, string> = {
 function formatDate(dateString: string): string {
   try {
     const date = new Date(dateString);
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   } catch {
     return dateString;
@@ -157,7 +176,7 @@ export default function DashboardPage() {
       fetchRecentTransactions();
       fetchBudgetsStatus();
       fetchDashboardNumbers();
-    }, [fetchRecentTransactions, fetchBudgetsStatus, fetchDashboardNumbers])
+    }, [fetchRecentTransactions, fetchBudgetsStatus, fetchDashboardNumbers]),
   );
 
   useEffect(() => {

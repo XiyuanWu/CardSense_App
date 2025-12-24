@@ -1,4 +1,11 @@
-import { View, Text, StyleSheet, Pressable, TextInput, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  TextInput,
+  Alert,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
@@ -6,7 +13,11 @@ import { Ionicons } from "@expo/vector-icons";
 import TextInputFull from "../../components/textInput/textInputFull";
 import ButtonHalf from "../../components/button/buttonHalf";
 import DropDown from "../../components/textInput/dropDown";
-import { getUserCards, createTransaction, getCardRecommendation } from "../../utils/api";
+import {
+  getUserCards,
+  createTransaction,
+  getCardRecommendation,
+} from "@/utils/api";
 
 export default function AddTransactionsPage() {
   const router = useRouter();
@@ -16,7 +27,9 @@ export default function AddTransactionsPage() {
   const [cardUsed, setCardUsed] = useState("");
   const [notes, setNotes] = useState("");
   const [bestCard, setBestCard] = useState("");
-  const [userCards, setUserCards] = useState<{ label: string; value: string }[]>([]);
+  const [userCards, setUserCards] = useState<
+    { label: string; value: string }[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [loadingRecommendation, setLoadingRecommendation] = useState(false);
 
@@ -51,7 +64,10 @@ export default function AddTransactionsPage() {
           setUserCards(cards);
         } else {
           if (!response.success) {
-            console.error("Failed to fetch user cards:", "error" in response ? response.error : "Unknown error");
+            console.error(
+              "Failed to fetch user cards:",
+              "error" in response ? response.error : "Unknown error",
+            );
           }
         }
       } catch (error) {
@@ -81,7 +97,10 @@ export default function AddTransactionsPage() {
             }
           } else {
             if (!response.success) {
-              console.error("Failed to get card recommendation:", "error" in response ? response.error : "Unknown error");
+              console.error(
+                "Failed to get card recommendation:",
+                "error" in response ? response.error : "Unknown error",
+              );
             }
             setBestCard("Unable to get recommendation");
           }
@@ -147,11 +166,14 @@ export default function AddTransactionsPage() {
         setCardUsed("");
         setNotes("");
         setBestCard("");
-        
+
         // Navigate back to transactions page - it will auto-refresh due to useFocusEffect
         router.push("/(tabs)/transactions");
       } else {
-        const errorMessage = "error" in response ? response.error.message : "Failed to add transaction";
+        const errorMessage =
+          "error" in response
+            ? response.error.message
+            : "Failed to add transaction";
         Alert.alert("Error", errorMessage);
       }
     } catch (error: any) {
@@ -241,7 +263,9 @@ export default function AddTransactionsPage() {
               </Text>
               <View style={styles.bestCardBox}>
                 <Text style={styles.bestCardName}>
-                  {loadingRecommendation ? "Loading..." : bestCard || "No recommendation"}
+                  {loadingRecommendation
+                    ? "Loading..."
+                    : bestCard || "No recommendation"}
                 </Text>
               </View>
             </View>

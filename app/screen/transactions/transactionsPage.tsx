@@ -1,10 +1,17 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useState, useCallback } from "react";
 import ButtonSeventy from "@/components/button/buttonSeventy";
-import { getTransactions, TransactionData } from "../../utils/api";
+import { getTransactions, TransactionData } from "@/utils/api";
 
 interface Transaction {
   id: string;
@@ -43,13 +50,39 @@ function formatDate(dateString: string): string {
   try {
     // Handle YYYY-MM-DD format directly
     if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const [year, month, day] = dateString.split('-');
-      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const [year, month, day] = dateString.split("-");
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
       return `${months[parseInt(month) - 1]} ${parseInt(day)}, ${year}`;
     }
     // Handle ISO date string or other formats
     const date = new Date(dateString);
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   } catch {
     return dateString;
@@ -68,19 +101,19 @@ function extractDateOnly(dateString: string): string {
     const date = new Date(dateString);
     // Use local methods to get the date in user's timezone
     const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   } catch {
     // If parsing fails, try to extract just the date part from ISO string
     // But be careful - this might be UTC date, so we should parse it properly
-    const datePart = dateString.split('T')[0];
+    const datePart = dateString.split("T")[0];
     if (datePart && datePart.match(/^\d{4}-\d{2}-\d{2}$/)) {
       // Parse it as a date to convert to local timezone
-      const date = new Date(datePart + 'T00:00:00');
+      const date = new Date(datePart + "T00:00:00");
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
     }
     return dateString;
@@ -88,9 +121,11 @@ function extractDateOnly(dateString: string): string {
 }
 
 // Group transactions by date
-function groupTransactionsByDate(transactions: Transaction[]): TransactionGroup[] {
+function groupTransactionsByDate(
+  transactions: Transaction[],
+): TransactionGroup[] {
   const groups: Record<string, Transaction[]> = {};
-  
+
   transactions.forEach((transaction) => {
     // Use dateKey for grouping (YYYY-MM-DD format)
     const dateKey = transaction.dateKey || transaction.date;
@@ -118,7 +153,9 @@ function groupTransactionsByDate(transactions: Transaction[]): TransactionGroup[
 
 export default function TransactionsPage() {
   const router = useRouter();
-  const [transactionGroups, setTransactionGroups] = useState<TransactionGroup[]>([]);
+  const [transactionGroups, setTransactionGroups] = useState<
+    TransactionGroup[]
+  >([]);
   const [loading, setLoading] = useState(true);
 
   const fetchTransactions = useCallback(async () => {
@@ -127,22 +164,24 @@ export default function TransactionsPage() {
       const response = await getTransactions();
       if (response.success && response.data) {
         // Transform backend data to frontend format
-        const transformedTransactions: Transaction[] = response.data.map((tx: TransactionData) => {
-          // Extract date key first (YYYY-MM-DD) for consistent grouping
-          const dateKey = extractDateOnly(tx.created_at);
-          // Format the same date key for display to ensure consistency
-          const formattedDate = formatDate(dateKey);
-          
-          return {
-            id: tx.id.toString(),
-            merchant: tx.merchant,
-            date: formattedDate, // Use formatted dateKey to ensure it matches the group header
-            dateKey: dateKey, // Date key for grouping (YYYY-MM-DD)
-            category: categoryMap[tx.category] || tx.category,
-            amount: parseFloat(tx.amount),
-            earned: parseFloat(tx.actual_reward || "0"),
-          };
-        });
+        const transformedTransactions: Transaction[] = response.data.map(
+          (tx: TransactionData) => {
+            // Extract date key first (YYYY-MM-DD) for consistent grouping
+            const dateKey = extractDateOnly(tx.created_at);
+            // Format the same date key for display to ensure consistency
+            const formattedDate = formatDate(dateKey);
+
+            return {
+              id: tx.id.toString(),
+              merchant: tx.merchant,
+              date: formattedDate, // Use formatted dateKey to ensure it matches the group header
+              dateKey: dateKey, // Date key for grouping (YYYY-MM-DD)
+              category: categoryMap[tx.category] || tx.category,
+              amount: parseFloat(tx.amount),
+              earned: parseFloat(tx.actual_reward || "0"),
+            };
+          },
+        );
 
         // Group by date
         const grouped = groupTransactionsByDate(transformedTransactions);
@@ -163,7 +202,7 @@ export default function TransactionsPage() {
   useFocusEffect(
     useCallback(() => {
       fetchTransactions();
-    }, [fetchTransactions])
+    }, [fetchTransactions]),
   );
 
   return (

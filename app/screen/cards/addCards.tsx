@@ -1,10 +1,24 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert, Platform } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Platform,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useEffect, useCallback } from "react";
 import Card from "@/components/cards/card";
-import { getAvailableCards, addUserCard, CardData, checkAuth } from "../../utils/api";
+import {
+  getAvailableCards,
+  addUserCard,
+  CardData,
+  checkAuth,
+} from "@/utils/api";
 
 interface AvailableCardData {
   id: string;
@@ -25,14 +39,16 @@ export default function AddCardsPage() {
   const verifyAuthAndFetchCards = useCallback(async () => {
     // Check if user is authenticated first
     const authResponse = await checkAuth();
-    
+
     if (!authResponse.success) {
       console.error("[AddCards] User not authenticated:", authResponse);
-      setError("Please log in to view cards. " + (authResponse as any).error?.message);
+      setError(
+        "Please log in to view cards. " + (authResponse as any).error?.message,
+      );
       setIsLoading(false);
       return;
     }
-    
+
     console.log("[AddCards] User authenticated, fetching cards...");
     fetchCards();
   }, []);
@@ -51,56 +67,67 @@ export default function AddCardsPage() {
       const response = await getAvailableCards();
 
       console.log("[AddCards] Response:", response);
-      
+
       if (response.success && response.data) {
         console.log("[AddCards] Mapping", response.data.length, "cards");
         // Map API response to component format
-        const mappedCards: AvailableCardData[] = response.data.map((card: CardData) => {
-          // Format rewards from reward_rules
-          const rewards: string[] = [];
-          if (card.reward_rules && card.reward_rules.length > 0) {
-            card.reward_rules.forEach((rule: any) => {
-              if (rule.multiplier && rule.category) {
-                const categories = Array.isArray(rule.category) 
-                  ? rule.category.join(", ") 
-                  : rule.category;
-                rewards.push(`${rule.multiplier}x on ${categories}`);
-              }
-            });
-          }
+        const mappedCards: AvailableCardData[] = response.data.map(
+          (card: CardData) => {
+            // Format rewards from reward_rules
+            const rewards: string[] = [];
+            if (card.reward_rules && card.reward_rules.length > 0) {
+              card.reward_rules.forEach((rule: any) => {
+                if (rule.multiplier && rule.category) {
+                  const categories = Array.isArray(rule.category)
+                    ? rule.category.join(", ")
+                    : rule.category;
+                  rewards.push(`${rule.multiplier}x on ${categories}`);
+                }
+              });
+            }
 
-          // Format benefits
-          if (card.benefits && card.benefits.length > 0) {
-            card.benefits.forEach((benefit: any) => {
-              if (benefit.benefits && Array.isArray(benefit.benefits)) {
-                benefit.benefits.forEach((b: string) => {
-                  if (b && !rewards.includes(b)) {
-                    rewards.push(b);
-                  }
-                });
-              }
-            });
-          }
+            // Format benefits
+            if (card.benefits && card.benefits.length > 0) {
+              card.benefits.forEach((benefit: any) => {
+                if (benefit.benefits && Array.isArray(benefit.benefits)) {
+                  benefit.benefits.forEach((b: string) => {
+                    if (b && !rewards.includes(b)) {
+                      rewards.push(b);
+                    }
+                  });
+                }
+              });
+            }
 
-          return {
-            id: card.id.toString(),
-            bankName: card.issuer,
-            cardName: card.name,
-            annualFee: `$${card.annual_fee}`,
-            ftf: card.ftf ? "Yes" : "No",
-            rewards: rewards.length > 0 ? rewards : ["No rewards information available"],
-          };
-        });
+            return {
+              id: card.id.toString(),
+              bankName: card.issuer,
+              cardName: card.name,
+              annualFee: `$${card.annual_fee}`,
+              ftf: card.ftf ? "Yes" : "No",
+              rewards:
+                rewards.length > 0
+                  ? rewards
+                  : ["No rewards information available"],
+            };
+          },
+        );
 
         setAvailableCards(mappedCards);
       } else {
         const errorResponse = response as any;
         console.error("[AddCards] Error response:", errorResponse);
-        const errorMessage = errorResponse.error?.message || errorResponse.error?.code || "Failed to load cards";
+        const errorMessage =
+          errorResponse.error?.message ||
+          errorResponse.error?.code ||
+          "Failed to load cards";
         setError(errorMessage);
-        
+
         // If unauthorized, suggest checking authentication
-        if (errorResponse.error?.code === "UNAUTHORIZED" || errorMessage.includes("401")) {
+        if (
+          errorResponse.error?.code === "UNAUTHORIZED" ||
+          errorMessage.includes("401")
+        ) {
           setError("Please log in to view cards. " + errorMessage);
         }
       }
@@ -133,21 +160,27 @@ export default function AddCardsPage() {
           // For mobile, use Alert.alert
           Alert.alert("Card Added", "Card added");
         }
-        
+
         // Navigate back to cards page after showing alert
         // Small delay for web to ensure alert is visible
-        setTimeout(() => {
-          router.push("/(tabs)/cards");
-        }, Platform.OS === "web" ? 200 : 100);
+        setTimeout(
+          () => {
+            router.push("/(tabs)/cards");
+          },
+          Platform.OS === "web" ? 200 : 100,
+        );
       } else {
         // Handle API errors
         const errorResponse = response as any;
         let errorMessage = errorResponse.error?.message || "Failed to add card";
-        
+
         // Check for details in different possible locations
         if (errorResponse.error?.details) {
           // Check for non_field_errors first (Django validation errors)
-          if (errorResponse.error.details.non_field_errors && Array.isArray(errorResponse.error.details.non_field_errors)) {
+          if (
+            errorResponse.error.details.non_field_errors &&
+            Array.isArray(errorResponse.error.details.non_field_errors)
+          ) {
             errorMessage = errorResponse.error.details.non_field_errors[0];
           } else if (Object.keys(errorResponse.error.details).length > 0) {
             // Extract first error from any field
@@ -155,7 +188,7 @@ export default function AddCardsPage() {
             const firstError = errorResponse.error.details[firstKey];
             if (Array.isArray(firstError) && firstError.length > 0) {
               errorMessage = firstError[0];
-            } else if (typeof firstError === 'string') {
+            } else if (typeof firstError === "string") {
               errorMessage = firstError;
             } else {
               errorMessage = Object.values(errorResponse.error.details)
@@ -166,7 +199,7 @@ export default function AddCardsPage() {
         } else if (errorResponse.error?.detail) {
           errorMessage = errorResponse.error.detail;
         }
-        
+
         console.error("[AddCards] Add card error:", errorResponse);
         Alert.alert("Error", errorMessage);
       }

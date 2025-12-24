@@ -1,9 +1,18 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert, Platform } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Platform,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
-import { getTransaction, deleteTransaction } from "../../utils/api";
+import { getTransaction, deleteTransaction } from "@/utils/api";
 import ButtonSeventy from "../../components/button/buttonSeventy";
 
 interface TransactionDetail {
@@ -38,7 +47,20 @@ const categoryMap: Record<string, string> = {
 function formatDate(dateString: string): string {
   try {
     const date = new Date(dateString);
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   } catch {
     return dateString;
@@ -48,13 +70,18 @@ function formatDate(dateString: string): string {
 export default function TransactionsDetailPage() {
   const router = useRouter();
   const { transactionId } = useLocalSearchParams<{ transactionId: string }>();
-  const [transaction, setTransaction] = useState<TransactionDetail | null>(null);
+  const [transaction, setTransaction] = useState<TransactionDetail | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
 
   // Log transactionId when component mounts or changes
   useEffect(() => {
-    console.log("[TransactionDetail] transactionId from params:", transactionId);
+    console.log(
+      "[TransactionDetail] transactionId from params:",
+      transactionId,
+    );
   }, [transactionId]);
 
   useEffect(() => {
@@ -90,7 +117,10 @@ export default function TransactionsDetailPage() {
           setTransaction(transactionDetail);
         } else {
           if (!response.success) {
-            const errorMessage = "error" in response ? response.error.message : "Failed to fetch transaction";
+            const errorMessage =
+              "error" in response
+                ? response.error.message
+                : "Failed to fetch transaction";
             Alert.alert("Error", errorMessage, [
               {
                 text: "OK",
@@ -101,12 +131,16 @@ export default function TransactionsDetailPage() {
         }
       } catch (error) {
         console.error("Error fetching transaction detail:", error);
-        Alert.alert("Error", "An error occurred while loading the transaction", [
-          {
-            text: "OK",
-            onPress: () => router.push("/(tabs)/transactions"),
-          },
-        ]);
+        Alert.alert(
+          "Error",
+          "An error occurred while loading the transaction",
+          [
+            {
+              text: "OK",
+              onPress: () => router.push("/(tabs)/transactions"),
+            },
+          ],
+        );
       } finally {
         setLoading(false);
       }
@@ -140,7 +174,10 @@ export default function TransactionsDetailPage() {
           },
         ]);
       } else {
-        const errorMessage = "error" in response ? response.error.message : "Failed to delete transaction";
+        const errorMessage =
+          "error" in response
+            ? response.error.message
+            : "Failed to delete transaction";
         if (Platform.OS === "web" && typeof window !== "undefined") {
           window.alert(errorMessage);
         } else {
@@ -152,7 +189,10 @@ export default function TransactionsDetailPage() {
       if (Platform.OS === "web" && typeof window !== "undefined") {
         window.alert("An error occurred while deleting the transaction");
       } else {
-        Alert.alert("Error", "An error occurred while deleting the transaction");
+        Alert.alert(
+          "Error",
+          "An error occurred while deleting the transaction",
+        );
       }
     } finally {
       setDeleting(false);
@@ -173,7 +213,7 @@ export default function TransactionsDetailPage() {
     // Web confirm
     if (Platform.OS === "web" && typeof window !== "undefined") {
       const ok = window.confirm(
-        "Are you sure you want to delete this transaction? This action cannot be undone."
+        "Are you sure you want to delete this transaction? This action cannot be undone.",
       );
       if (ok) void performDelete();
       return;
@@ -185,8 +225,12 @@ export default function TransactionsDetailPage() {
       "Are you sure you want to delete this transaction? This action cannot be undone.",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => void performDelete() },
-      ]
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => void performDelete(),
+        },
+      ],
     );
   };
 
@@ -211,7 +255,10 @@ export default function TransactionsDetailPage() {
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Pressable style={styles.backButton} onPress={() => router.push("/(tabs)/transactions")}>
+          <Pressable
+            style={styles.backButton}
+            onPress={() => router.push("/(tabs)/transactions")}
+          >
             <Ionicons name="arrow-back" size={24} color="#000000" />
           </Pressable>
           <Text style={styles.title}>Transactions Detail</Text>
@@ -231,7 +278,9 @@ export default function TransactionsDetailPage() {
             {/* Summary Card */}
             <View style={styles.summaryCard}>
               <Text style={styles.merchantName}>{transaction.merchant}</Text>
-              <Text style={styles.amount}>${transaction.amount.toFixed(2)}</Text>
+              <Text style={styles.amount}>
+                ${transaction.amount.toFixed(2)}
+              </Text>
             </View>
 
             {/* Details Card */}

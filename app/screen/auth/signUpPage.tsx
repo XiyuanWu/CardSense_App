@@ -1,11 +1,18 @@
-import { View, Text, StyleSheet, Alert, ActivityIndicator, Platform } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  Platform,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import ButtonFull from "../../components/button/buttonFull";
 import TextInputFull from "../../components/textInput/textInputFull";
 import TextInputHalf from "../../components/textInput/textInputHalf";
-import { registerUser } from "../../utils/api";
+import { registerUser } from "@/utils/api";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -82,12 +89,14 @@ export default function SignUpPage() {
 
       if (response.success) {
         console.log("[SignUp] Showing success alert and navigating...");
-        
+
         // Show success alert and navigate to login page
         // On web, Alert.alert might not work, so we'll navigate after a short delay
         if (Platform.OS === "web") {
           // For web, show alert and navigate immediately
-          alert("Register Success!\n\nYour account has been created successfully!");
+          alert(
+            "Register Success!\n\nYour account has been created successfully!",
+          );
           // Small delay to ensure alert is shown before navigation
           setTimeout(() => {
             console.log("[SignUp] Navigating to login page...");
@@ -102,11 +111,13 @@ export default function SignUpPage() {
               {
                 text: "OK",
                 onPress: () => {
-                  console.log("[SignUp] Alert dismissed, navigating to login...");
+                  console.log(
+                    "[SignUp] Alert dismissed, navigating to login...",
+                  );
                   router.push("/(auth)/login");
                 },
               },
-            ]
+            ],
           );
         }
       } else {
@@ -114,7 +125,9 @@ export default function SignUpPage() {
         const maybeError: any = (response as any).error;
         const details: any = maybeError?.details;
         const errorMessage =
-          details && typeof details === "object" && Object.keys(details).length > 0
+          details &&
+          typeof details === "object" &&
+          Object.keys(details).length > 0
             ? Object.values(details).flat().join(", ")
             : maybeError?.message ||
               (response as any)?.detail ||
