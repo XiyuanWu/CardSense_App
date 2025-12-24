@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     borderColor: "#E6EAEF",
     borderRadius: 20,
     padding: 20,
-    height: 65,
+    minHeight: 80,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
@@ -198,14 +198,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#222222",
-    marginTop: 20,
     textAlign: "center",
   },
   welcomeSubtext: {
     fontSize: 16,
     fontWeight: "600",
     color: "#222222",
-    marginBottom: 20,
     textAlign: "center",
   },
   section: {

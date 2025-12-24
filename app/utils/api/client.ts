@@ -3,9 +3,37 @@
  */
 
 import { Platform } from "react-native";
+import Constants from "expo-constants";
+
+function getEnvApiBaseUrl(): string | null {
+  const envUrl =
+    process.env.EXPO_PUBLIC_API_BASE_URL ||
+    process.env.EXPO_PUBLIC_API_URL ||
+    "";
+  return envUrl ? envUrl.replace(/\/$/, "") : null;
+}
+
+function getDevHostFromExpo(): string | null {
+  const hostUri =
+    (Constants.expoConfig as any)?.hostUri ||
+    (Constants as any)?.manifest?.debuggerHost ||
+    (Constants as any)?.manifest2?.extra?.expoClient?.hostUri ||
+    null;
+
+  if (typeof hostUri !== "string" || !hostUri) return null;
+  return hostUri.split(":")[0] || null;
+}
 
 function getApiBaseUrl(): string {
+  const env = getEnvApiBaseUrl();
+  if (env) return env.endsWith("/api") ? env : `${env}/api`;
+
   if (Platform.OS === "android") {
+    // Prefer Expo dev host IP for physical devices (10.0.2.2 only works on emulator).
+    const devHost = getDevHostFromExpo();
+    if (devHost && devHost !== "localhost" && devHost !== "127.0.0.1") {
+      return `http://${devHost}:8000/api`;
+    }
     return "http://10.0.2.2:8000/api";
   } else if (Platform.OS === "ios") {
     return "http://localhost:8000/api";
@@ -129,8 +157,25 @@ export async function apiRequest(
   };
   if (csrfToken) headers["X-CSRFToken"] = csrfToken;
 
-  const doFetch = async () =>
-    fetch(url, { ...options, headers, credentials: "include" });
+  const doFetch = async () => {
+    const controller =
+      typeof AbortController !== "undefined" ? new AbortController() : null;
+    const timeoutMs = 15000;
+    const timeoutId = controller
+      ? setTimeout(() => controller.abort(), timeoutMs)
+      : null;
+
+    try {
+      return await fetch(url, {
+        ...options,
+        headers,
+        credentials: "include",
+        signal: controller?.signal,
+      });
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  };
 
   let response = await doFetch();
 
