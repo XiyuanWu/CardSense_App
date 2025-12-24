@@ -1171,6 +1171,85 @@ export async function getTransactions(): Promise<ApiResponse<TransactionData[]>>
 }
 
 /**
+ * Delete a transaction by ID
+ */
+export async function deleteTransaction(transactionId: number | string): Promise<ApiResponse<any>> {
+  try {
+    console.log("[API] Deleting transaction:", transactionId);
+    
+    const response = await apiRequest(`/transactions/transactions/${transactionId}/`, {
+      method: "DELETE",
+    });
+
+    console.log("[API] Delete transaction response status:", response.status);
+    console.log("[API] Delete transaction response headers:", Object.fromEntries(response.headers.entries()));
+
+    // Read response body once
+    let responseText = "";
+    let result: any = null;
+    
+    try {
+      responseText = await response.text();
+      console.log("[API] Delete transaction response text:", responseText);
+      if (responseText && responseText.trim()) {
+        result = JSON.parse(responseText);
+        console.log("[API] Delete transaction response data:", result);
+      }
+    } catch (error) {
+      console.log("[API] Delete transaction - could not parse response:", error);
+    }
+
+    if (!response.ok) {
+      const errorData = result || { message: `HTTP ${response.status}: ${response.statusText}` };
+      console.error("[API] Delete transaction error response:", errorData);
+      return {
+        success: false,
+        error: {
+          code: response.status === 401 ? "UNAUTHORIZED" : response.status === 404 ? "NOT_FOUND" : "API_ERROR",
+          message: errorData.message || errorData.detail || `Failed to delete transaction (${response.status})`,
+          details: errorData,
+        },
+      };
+    }
+
+    // DELETE requests might have a JSON body with success message
+
+    // Backend returns { success: True, message: "..." } on success
+    if (result) {
+      if (result.success === true || result.success === "True") {
+        console.log("[API] Delete transaction - success from response body");
+        return {
+          success: true,
+          data: result.data || null,
+          message: result.message || "Transaction deleted successfully",
+        };
+      }
+    }
+
+    // If response is 200/204, consider it successful even without body
+    // Django REST Framework returns 200 with JSON body: { success: True, message: "..." }
+    // But if we got here, the response was 200 but we couldn't parse it or it doesn't have success field
+    console.log("[API] Delete transaction - response OK (200), treating as success");
+    console.log("[API] Delete transaction - result:", result);
+    return {
+      success: true,
+      data: null,
+      message: "Transaction deleted successfully",
+    };
+  } catch (error: any) {
+    console.error("Delete transaction error:", error);
+    const errorMessage = error?.message || "Unknown error";
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: `Failed to delete transaction: ${errorMessage}`,
+      },
+    };
+  }
+}
+
+/**
  * Get card recommendation for a category
  */
 export async function getCardRecommendation(data: {

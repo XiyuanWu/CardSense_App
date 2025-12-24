@@ -9,7 +9,8 @@ import { getTransactions, TransactionData } from "../../utils/api";
 interface Transaction {
   id: string;
   merchant: string;
-  date: string;
+  date: string; // Formatted date for display
+  dateKey?: string; // Date key for grouping (YYYY-MM-DD)
   category: string;
   amount: number;
   earned: number;
@@ -37,13 +38,51 @@ const categoryMap: Record<string, string> = {
   SELECTED_CATEGORIES: "Selected Categories",
 };
 
-// Format date for display
+// Format date for display (full date with month name)
 function formatDate(dateString: string): string {
   try {
+    // Handle YYYY-MM-DD format directly
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateString.split('-');
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return `${months[parseInt(month) - 1]} ${parseInt(day)}, ${year}`;
+    }
+    // Handle ISO date string or other formats
     const date = new Date(dateString);
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   } catch {
+    return dateString;
+  }
+}
+
+// Extract date only (YYYY-MM-DD) from date string for grouping
+// Uses local timezone to match user's local date
+function extractDateOnly(dateString: string): string {
+  try {
+    // If it's already in YYYY-MM-DD format, return as is
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateString;
+    }
+    // Parse the date string and extract date parts using LOCAL timezone
+    const date = new Date(dateString);
+    // Use local methods to get the date in user's timezone
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch {
+    // If parsing fails, try to extract just the date part from ISO string
+    // But be careful - this might be UTC date, so we should parse it properly
+    const datePart = dateString.split('T')[0];
+    if (datePart && datePart.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      // Parse it as a date to convert to local timezone
+      const date = new Date(datePart + 'T00:00:00');
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
     return dateString;
   }
 }
@@ -53,7 +92,8 @@ function groupTransactionsByDate(transactions: Transaction[]): TransactionGroup[
   const groups: Record<string, Transaction[]> = {};
   
   transactions.forEach((transaction) => {
-    const dateKey = transaction.date;
+    // Use dateKey for grouping (YYYY-MM-DD format)
+    const dateKey = transaction.dateKey || transaction.date;
     if (!groups[dateKey]) {
       groups[dateKey] = [];
     }
@@ -62,11 +102,18 @@ function groupTransactionsByDate(transactions: Transaction[]): TransactionGroup[
 
   // Convert to array and sort by date (newest first)
   return Object.keys(groups)
-    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
-    .map((date) => ({
-      date: formatDate(date),
-      transactions: groups[date],
-    }));
+    .sort((a, b) => {
+      // Compare date strings (YYYY-MM-DD format sorts correctly)
+      return b.localeCompare(a);
+    })
+    .map((dateKey) => {
+      // Format the date key for display in header
+      const formattedDate = formatDate(dateKey);
+      return {
+        date: formattedDate,
+        transactions: groups[dateKey],
+      };
+    });
 }
 
 export default function TransactionsPage() {
@@ -80,14 +127,22 @@ export default function TransactionsPage() {
       const response = await getTransactions();
       if (response.success && response.data) {
         // Transform backend data to frontend format
-        const transformedTransactions: Transaction[] = response.data.map((tx: TransactionData) => ({
-          id: tx.id.toString(),
-          merchant: tx.merchant,
-          date: tx.created_at,
-          category: categoryMap[tx.category] || tx.category,
-          amount: parseFloat(tx.amount),
-          earned: parseFloat(tx.actual_reward || "0"),
-        }));
+        const transformedTransactions: Transaction[] = response.data.map((tx: TransactionData) => {
+          // Extract date key first (YYYY-MM-DD) for consistent grouping
+          const dateKey = extractDateOnly(tx.created_at);
+          // Format the same date key for display to ensure consistency
+          const formattedDate = formatDate(dateKey);
+          
+          return {
+            id: tx.id.toString(),
+            merchant: tx.merchant,
+            date: formattedDate, // Use formatted dateKey to ensure it matches the group header
+            dateKey: dateKey, // Date key for grouping (YYYY-MM-DD)
+            category: categoryMap[tx.category] || tx.category,
+            amount: parseFloat(tx.amount),
+            earned: parseFloat(tx.actual_reward || "0"),
+          };
+        });
 
         // Group by date
         const grouped = groupTransactionsByDate(transformedTransactions);

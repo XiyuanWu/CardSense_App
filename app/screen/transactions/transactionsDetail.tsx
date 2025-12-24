@@ -3,7 +3,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useEffect } from "react";
-import { getTransaction } from "../../utils/api";
+import { getTransaction, deleteTransaction } from "../../utils/api";
+import ButtonSeventy from "../../components/button/buttonSeventy";
 
 interface TransactionDetail {
   id: string;
@@ -49,12 +50,18 @@ export default function TransactionsDetailPage() {
   const { transactionId } = useLocalSearchParams<{ transactionId: string }>();
   const [transaction, setTransaction] = useState<TransactionDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
+
+  // Log transactionId when component mounts or changes
+  useEffect(() => {
+    console.log("[TransactionDetail] transactionId from params:", transactionId);
+  }, [transactionId]);
 
   useEffect(() => {
     const fetchTransactionDetail = async () => {
       if (!transactionId) {
         Alert.alert("Error", "Transaction ID is missing");
-        router.back();
+        router.push("/(tabs)/transactions");
         return;
       }
 
@@ -87,7 +94,7 @@ export default function TransactionsDetailPage() {
             Alert.alert("Error", errorMessage, [
               {
                 text: "OK",
-                onPress: () => router.back(),
+                onPress: () => router.push("/(tabs)/transactions"),
               },
             ]);
           }
@@ -97,7 +104,7 @@ export default function TransactionsDetailPage() {
         Alert.alert("Error", "An error occurred while loading the transaction", [
           {
             text: "OK",
-            onPress: () => router.back(),
+            onPress: () => router.push("/(tabs)/transactions"),
           },
         ]);
       } finally {
@@ -107,6 +114,69 @@ export default function TransactionsDetailPage() {
 
     fetchTransactionDetail();
   }, [transactionId, router]);
+
+  const handleDelete = () => {
+    console.log("[Delete] handleDelete called, transactionId:", transactionId);
+    if (!transactionId) {
+      console.error("[Delete] No transactionId provided");
+      Alert.alert("Error", "Transaction ID is missing");
+      return;
+    }
+
+    Alert.alert(
+      "Delete Transaction",
+      "Are you sure you want to delete this transaction? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+          onPress: () => console.log("[Delete] User cancelled"),
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            console.log("[Delete] User confirmed deletion");
+            const performDelete = async () => {
+              setDeleting(true);
+              try {
+                console.log("[Delete] Calling deleteTransaction with ID:", transactionId);
+                const response = await deleteTransaction(transactionId);
+                console.log("[Delete] Response received:", JSON.stringify(response, null, 2));
+                console.log("[Delete] Response success:", response.success);
+                
+                if (response.success) {
+                  console.log("[Delete] Success! Transaction deleted. Showing alert and navigating...");
+                  // Show success message first, then navigate when user dismisses
+                  Alert.alert("Success", "This transaction has been deleted", [
+                    {
+                      text: "OK",
+                      onPress: () => {
+                        console.log("[Delete] User clicked OK, navigating to transactions page");
+                        // Navigate after user dismisses alert - useFocusEffect will refresh the list
+                        router.push("/(tabs)/transactions");
+                      },
+                    },
+                  ]);
+                } else {
+                  const errorMessage = "error" in response ? response.error.message : "Failed to delete transaction";
+                  console.error("[Delete] Error response:", errorMessage);
+                  console.error("[Delete] Full error:", "error" in response ? response.error : "Unknown error");
+                  Alert.alert("Error", errorMessage);
+                }
+              } catch (error) {
+                console.error("[Delete] Exception caught:", error);
+                Alert.alert("Error", "An error occurred while deleting the transaction");
+              } finally {
+                setDeleting(false);
+              }
+            };
+            performDelete();
+          },
+        },
+      ]
+    );
+  };
 
   const DetailRow = ({
     label,
@@ -129,7 +199,7 @@ export default function TransactionsDetailPage() {
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Pressable style={styles.backButton} onPress={() => router.back()}>
+          <Pressable style={styles.backButton} onPress={() => router.push("/(tabs)/transactions")}>
             <Ionicons name="arrow-back" size={24} color="#000000" />
           </Pressable>
           <Text style={styles.title}>Transactions Detail</Text>
@@ -161,6 +231,17 @@ export default function TransactionsDetailPage() {
                 label="Reward Earned"
                 value={`$${transaction.rewardEarned.toFixed(2)} (${transaction.rewardPercent.toFixed(2)}%)`}
                 isLast
+              />
+            </View>
+
+            {/* Delete Button */}
+            <View style={styles.deleteButtonContainer}>
+              <ButtonSeventy
+                text={deleting ? "Deleting..." : "Delete"}
+                onPress={handleDelete}
+                color="#DC2527"
+                textColor="#FFFFFF"
+                disabled={deleting}
               />
             </View>
           </ScrollView>
@@ -286,5 +367,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "#777777",
+  },
+  deleteButtonContainer: {
+    marginTop: 20,
+    marginBottom: 20,
   },
 });
