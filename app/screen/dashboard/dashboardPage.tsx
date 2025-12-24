@@ -11,9 +11,55 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
+import { getTransactions, TransactionData, getBudgets, BudgetListItem, getDashboardSummary } from "../../utils/api";
+
+const CATEGORY_MAP: Record<string, string> = {
+  DINING: "Dining",
+  GROCERIES: "Groceries",
+  GAS: "Gas",
+  ONLINE_SHOPPING: "Online Shopping",
+  ENTERTAINMENT: "Entertainment",
+  GENERAL_TRAVEL: "General Travel",
+  AIRLINE_TRAVEL: "Airline Travel",
+  HOTEL_TRAVEL: "Hotel Travel",
+  TRANSIT: "Transit",
+  PHARMACY: "Pharmacy",
+  RENT: "Rent",
+  OTHER: "Other",
+  SELECTED_CATEGORIES: "Selected Categories",
+};
+
+function formatDate(dateString: string): string {
+  try {
+    const date = new Date(dateString);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  } catch {
+    return dateString;
+  }
+}
+
+function formatMonthYear(yearMonth: string): string {
+  const [y, m] = yearMonth.split("-");
+  const monthNames: Record<string, string> = {
+    "01": "Jan",
+    "02": "Feb",
+    "03": "Mar",
+    "04": "Apr",
+    "05": "May",
+    "06": "Jun",
+    "07": "Jul",
+    "08": "Aug",
+    "09": "Sep",
+    "10": "Oct",
+    "11": "Nov",
+    "12": "Dec",
+  };
+  return `${monthNames[m] || m} ${y}`;
+}
 
 interface Transaction {
   id: string;
@@ -25,6 +71,7 @@ interface Transaction {
 
 interface Budget {
   id: string;
+  yearMonthKey: string; // YYYY-MM
   monthYear: string;
   budgetAmount: number;
   spentAmount: number;
@@ -37,26 +84,81 @@ export default function DashboardPage() {
     Dimensions.get("window").height,
   );
   const [maxTransactions, setMaxTransactions] = useState(3);
+  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [allBudgets, setAllBudgets] = useState<Budget[]>([]);
+  const [monthlySpending, setMonthlySpending] = useState(0);
+  const [rewardsEarned, setRewardsEarned] = useState(0);
+  const [budgetAlerts, setBudgetAlerts] = useState(0);
 
-  // TODO: Replace with backend API call
-  // const fetchDashboardData = async () => {
-  //   const response = await fetch('/api/dashboard/');
-  //   const data = await response.json();
-  //   return data;
-  // };
+  const activeBudgets = allBudgets.length;
+  // budgetAlerts now comes from backend summary
 
-  // Placeholder data - will be replaced with backend data
-  const monthlySpending = 63.55;
-  const rewardsEarned = 5.8;
-  const activeBudgets = 0;
-  const budgetAlerts = 0;
+  const fetchRecentTransactions = useCallback(async () => {
+    try {
+      const response = await getTransactions();
+      if (response.success && response.data) {
+        const transformed: Transaction[] = response.data
+          // backend returns newest first already, but keep it explicit/safe
+          .slice()
+          .map((tx: TransactionData) => ({
+            id: tx.id.toString(),
+            merchant: tx.merchant,
+            date: formatDate(tx.created_at),
+            category: CATEGORY_MAP[tx.category] || tx.category,
+            amount: parseFloat(tx.amount),
+          }));
+        setAllTransactions(transformed);
+      } else {
+        setAllTransactions([]);
+      }
+    } catch (e) {
+      console.error("[Dashboard] Failed to fetch transactions:", e);
+      setAllTransactions([]);
+    }
+  }, []);
 
-  // Placeholder budgets - will be replaced with backend data
-  // Set to empty array to show empty state, or populate with data to show budget
-  const allBudgets: Budget[] = [];
+  const fetchBudgetsStatus = useCallback(async () => {
+    try {
+      const res = await getBudgets();
+      if (res.success && res.data) {
+        const mapped: Budget[] = (res.data as BudgetListItem[]).map((b) => ({
+          id: b.id.toString(),
+          yearMonthKey: b.year_month,
+          monthYear: formatMonthYear(b.year_month),
+          budgetAmount: Number(b.amount),
+          spentAmount: Number(b.spent),
+        }));
+        setAllBudgets(mapped);
+      } else {
+        setAllBudgets([]);
+      }
+    } catch (e) {
+      console.error("[Dashboard] Failed to fetch budgets:", e);
+      setAllBudgets([]);
+    }
+  }, []);
 
-  // Placeholder transactions - will be replaced with backend data
-  const allTransactions: Transaction[] = [];
+  const fetchDashboardNumbers = useCallback(async () => {
+    try {
+      const res = await getDashboardSummary();
+      if (res.success && res.data) {
+        setMonthlySpending(res.data.summary.total_spent_this_month || 0);
+        setRewardsEarned(res.data.summary.total_rewards_this_month || 0);
+        setBudgetAlerts(res.data.summary.budget_alerts || 0);
+      }
+    } catch (e) {
+      console.error("[Dashboard] Failed to fetch dashboard summary:", e);
+    }
+  }, []);
+
+  // Refresh when Dashboard tab/screen becomes active
+  useFocusEffect(
+    useCallback(() => {
+      fetchRecentTransactions();
+      fetchBudgetsStatus();
+      fetchDashboardNumbers();
+    }, [fetchRecentTransactions, fetchBudgetsStatus, fetchDashboardNumbers])
+  );
 
   useEffect(() => {
     const subscription = Dimensions.addEventListener("change", ({ window }) => {

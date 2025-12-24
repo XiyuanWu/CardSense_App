@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -115,65 +115,77 @@ export default function TransactionsDetailPage() {
     fetchTransactionDetail();
   }, [transactionId, router]);
 
+  const performDelete = async () => {
+    if (!transactionId) return;
+    if (deleting) return;
+
+    setDeleting(true);
+    try {
+      const response = await deleteTransaction(transactionId);
+      console.log("[Delete] Response received:", response);
+
+      if (response.success) {
+        // On web, RN's Alert is unreliable; use window.alert instead.
+        if (Platform.OS === "web" && typeof window !== "undefined") {
+          window.alert("This transaction has been deleted");
+          // replace() avoids stacking and reliably triggers refresh on the list screen
+          router.replace("/(tabs)/transactions");
+          return;
+        }
+
+        Alert.alert("Success", "This transaction has been deleted", [
+          {
+            text: "OK",
+            onPress: () => router.replace("/(tabs)/transactions"),
+          },
+        ]);
+      } else {
+        const errorMessage = "error" in response ? response.error.message : "Failed to delete transaction";
+        if (Platform.OS === "web" && typeof window !== "undefined") {
+          window.alert(errorMessage);
+        } else {
+          Alert.alert("Error", errorMessage);
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting transaction:", error);
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        window.alert("An error occurred while deleting the transaction");
+      } else {
+        Alert.alert("Error", "An error occurred while deleting the transaction");
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const handleDelete = () => {
     console.log("[Delete] handleDelete called, transactionId:", transactionId);
     if (!transactionId) {
-      console.error("[Delete] No transactionId provided");
-      Alert.alert("Error", "Transaction ID is missing");
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        window.alert("Transaction ID is missing");
+      } else {
+        Alert.alert("Error", "Transaction ID is missing");
+      }
       return;
     }
 
+    // Web confirm
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      const ok = window.confirm(
+        "Are you sure you want to delete this transaction? This action cannot be undone."
+      );
+      if (ok) void performDelete();
+      return;
+    }
+
+    // Native confirm
     Alert.alert(
       "Delete Transaction",
       "Are you sure you want to delete this transaction? This action cannot be undone.",
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-          onPress: () => console.log("[Delete] User cancelled"),
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            console.log("[Delete] User confirmed deletion");
-            const performDelete = async () => {
-              setDeleting(true);
-              try {
-                console.log("[Delete] Calling deleteTransaction with ID:", transactionId);
-                const response = await deleteTransaction(transactionId);
-                console.log("[Delete] Response received:", JSON.stringify(response, null, 2));
-                console.log("[Delete] Response success:", response.success);
-                
-                if (response.success) {
-                  console.log("[Delete] Success! Transaction deleted. Showing alert and navigating...");
-                  // Show success message first, then navigate when user dismisses
-                  Alert.alert("Success", "This transaction has been deleted", [
-                    {
-                      text: "OK",
-                      onPress: () => {
-                        console.log("[Delete] User clicked OK, navigating to transactions page");
-                        // Navigate after user dismisses alert - useFocusEffect will refresh the list
-                        router.push("/(tabs)/transactions");
-                      },
-                    },
-                  ]);
-                } else {
-                  const errorMessage = "error" in response ? response.error.message : "Failed to delete transaction";
-                  console.error("[Delete] Error response:", errorMessage);
-                  console.error("[Delete] Full error:", "error" in response ? response.error : "Unknown error");
-                  Alert.alert("Error", errorMessage);
-                }
-              } catch (error) {
-                console.error("[Delete] Exception caught:", error);
-                Alert.alert("Error", "An error occurred while deleting the transaction");
-              } finally {
-                setDeleting(false);
-              }
-            };
-            performDelete();
-          },
-        },
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: () => void performDelete() },
       ]
     );
   };

@@ -31,8 +31,14 @@ function getApiBaseUrl(): string {
     // iOS simulator can use localhost
     return "http://localhost:8000/api";
   } else {
-    // Web platform - use localhost to match session cookie domain
-    // Important: session cookies work better with localhost than 127.0.0.1
+    // Web platform:
+    // Use the SAME hostname as the frontend (localhost vs 127.0.0.1), otherwise
+    // CSRF/session cookies won't be available to the frontend and POSTs will 403.
+    if (typeof window !== "undefined" && window.location?.hostname) {
+      const protocol = window.location.protocol || "http:";
+      const host = window.location.hostname; // e.g. localhost or 127.0.0.1
+      return `${protocol}//${host}:8000/api`;
+    }
     return "http://localhost:8000/api";
   }
 }
@@ -227,10 +233,23 @@ async function apiRequest(
   const url = `${API_BASE_URL}${endpoint}`;
   console.log(`[API] Making request to: ${url}`);
   
-  // Ensure CSRF token is available
+  // Ensure CSRF token is available.
+  // On web, always try to read from cookies first (fast + reliable).
+  if (Platform.OS === "web") {
+    const cookieToken = getCSRFTokenFromCookies();
+    if (cookieToken) {
+      csrfToken = cookieToken;
+    }
+  }
+
   if (!csrfToken) {
     console.log("[API] Fetching CSRF token...");
     await getCSRFToken();
+    // One more attempt to read from cookies on web after fetching
+    if (Platform.OS === "web") {
+      const cookieToken = getCSRFTokenFromCookies();
+      if (cookieToken) csrfToken = cookieToken;
+    }
     console.log(`[API] CSRF token: ${csrfToken ? "obtained" : "not obtained"}`);
   }
 
@@ -314,6 +333,15 @@ export async function registerUser(data: {
   last_name: string;
 }): Promise<ApiResponse<{ user: any }>> {
   try {
+    // Ensure CSRF token is available before making the request (especially on web)
+    if (!csrfToken) {
+      await getCSRFToken();
+      if (Platform.OS === "web") {
+        const cookieToken = getCSRFTokenFromCookies();
+        if (cookieToken) csrfToken = cookieToken;
+      }
+    }
+
     const response = await apiRequest("/auth/register/", {
       method: "POST",
       body: JSON.stringify({
@@ -325,18 +353,94 @@ export async function registerUser(data: {
       }),
     });
 
-    const result = await response.json();
-    console.log("[API] Registration response result:", result);
-    console.log("[API] Response OK:", response.ok);
-    console.log("[API] Response status:", response.status);
+    let result: any = null;
+    try {
+      result = await response.json();
+    } catch {
+      const text = await response.text().catch(() => "");
+      result = text ? { detail: text } : null;
+    }
+
+    console.log("[API] Registration response status:", response.status);
+    console.log("[API] Registration response data:", result);
+
+    // Handle CSRF errors specifically - retry once with fresh token
+    if (!response.ok && response.status === 403 && result?.detail && String(result.detail).includes("CSRF")) {
+      console.log("[API] Registration CSRF error detected, fetching new token and retrying...");
+      csrfToken = null;
+      await getCSRFToken();
+      if (Platform.OS === "web") {
+        const cookieToken = getCSRFTokenFromCookies();
+        if (cookieToken) csrfToken = cookieToken;
+      }
+
+      const retryResponse = await apiRequest("/auth/register/", {
+        method: "POST",
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          confirmPassword: data.confirmPassword,
+          first_name: data.first_name,
+          last_name: data.last_name,
+        }),
+      });
+
+      let retryResult: any = null;
+      try {
+        retryResult = await retryResponse.json();
+      } catch {
+        const text = await retryResponse.text().catch(() => "");
+        retryResult = text ? { detail: text } : null;
+      }
+
+      if (retryResponse.ok) {
+        if (retryResult?.success && retryResult?.data) {
+          return retryResult as ApiSuccessResponse<{ user: any }>;
+        }
+        // fallback if server returns user directly
+        return { success: true, data: { user: retryResult?.data?.user || retryResult?.user || retryResult } };
+      }
+
+      return {
+        success: false,
+        error: {
+          code: "CSRF_ERROR",
+          message: retryResult?.detail || retryResult?.message || "CSRF token validation failed",
+          details: retryResult || undefined,
+        },
+      };
+    }
 
     if (response.ok) {
-      console.log("[API] Registration successful, returning success response");
-      return result as ApiSuccessResponse<{ user: any }>;
-    } else {
-      console.log("[API] Registration failed, returning error response");
-      return result as ApiErrorResponse;
+      if (result?.success && result?.data) {
+        return result as ApiSuccessResponse<{ user: any }>;
+      }
+      // Fallback if structure is different
+      return { success: true, data: { user: result?.data?.user || result?.user || result } };
     }
+
+    // Normalize errors so UI never crashes (backend sometimes returns {detail: "..."})
+    const message =
+      result?.error?.message ||
+      result?.detail ||
+      result?.message ||
+      `Registration failed (${response.status})`;
+
+    return {
+      success: false,
+      error: {
+        code:
+          response.status === 400
+            ? "VALIDATION_ERROR"
+            : response.status === 403
+              ? "FORBIDDEN"
+              : response.status === 401
+                ? "UNAUTHORIZED"
+                : "API_ERROR",
+        message,
+        details: result?.error?.details || result?.error || result || undefined,
+      },
+    };
   } catch (error: any) {
     console.error("Registration error:", error);
     console.error("Error details:", {
@@ -939,6 +1043,237 @@ export interface CardRecommendationData {
       multiplier: number;
     }[];
   };
+}
+
+/**
+ * Budget-related API functions
+ */
+
+export interface BudgetListItem {
+  id: number;
+  year_month: string; // YYYY-MM
+  amount: number;
+  spent: number;
+  remaining: number;
+  percentage_used: number;
+  thresholds?: any;
+  fired_flags?: any;
+}
+
+export async function getBudgets(): Promise<ApiResponse<BudgetListItem[]>> {
+  try {
+    console.log("[API] Fetching budgets...");
+
+    const response = await apiRequest("/budgets/", {
+      method: "GET",
+    });
+
+    console.log("[API] Get budgets response status:", response.status);
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+      }
+      console.error("[API] Get budgets error response:", errorData);
+      return {
+        success: false,
+        error: {
+          code: response.status === 401 ? "UNAUTHORIZED" : "API_ERROR",
+          message: errorData.message || errorData.detail || `Failed to fetch budgets (${response.status})`,
+          details: errorData,
+        },
+      };
+    }
+
+    const result = await response.json();
+    console.log("[API] Get budgets response data:", result);
+
+    if (result.success && Array.isArray(result.data)) {
+      return { success: true, data: result.data };
+    }
+
+    if (Array.isArray(result)) {
+      return { success: true, data: result };
+    }
+
+    if (result.data && Array.isArray(result.data)) {
+      return { success: true, data: result.data };
+    }
+
+    return {
+      success: false,
+      error: {
+        code: "INVALID_RESPONSE",
+        message: "Unexpected response format from server",
+      },
+    };
+  } catch (error: any) {
+    console.error("Get budgets error:", error);
+    const errorMessage = error?.message || "Unknown error";
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: `Failed to fetch budgets: ${errorMessage}`,
+      },
+    };
+  }
+}
+
+export async function createBudget(data: {
+  amount: number;
+  year_month?: string; // YYYY-MM (optional; backend defaults to current month)
+}): Promise<ApiResponse<any>> {
+  try {
+    console.log("[API] Creating budget...", data);
+
+    const response = await apiRequest("/budgets/", {
+      method: "POST",
+      body: JSON.stringify({
+        amount: data.amount,
+        year_month: data.year_month || "",
+      }),
+    });
+
+    console.log("[API] Create budget response status:", response.status);
+
+    const result = await response.json().catch(() => null);
+    console.log("[API] Create budget response data:", result);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: {
+          code: response.status === 401 ? "UNAUTHORIZED" : response.status === 400 ? "VALIDATION_ERROR" : "API_ERROR",
+          message: result?.error?.message || result?.message || result?.detail || `Failed to create budget (${response.status})`,
+          details: result,
+        },
+      };
+    }
+
+    if (result?.success) {
+      return { success: true, data: result.data, message: result.message };
+    }
+
+    return { success: true, data: result };
+  } catch (error: any) {
+    console.error("Create budget error:", error);
+    const errorMessage = error?.message || "Unknown error";
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: `Failed to create budget: ${errorMessage}`,
+      },
+    };
+  }
+}
+
+export interface DashboardSummaryData {
+  summary: {
+    total_spent_this_month: number;
+    total_rewards_this_month: number;
+    active_budgets: number;
+    budget_alerts: number;
+  };
+  budget_status: any[];
+  recent_transactions: any[];
+}
+
+export async function getDashboardSummary(): Promise<ApiResponse<DashboardSummaryData>> {
+  try {
+    console.log("[API] Fetching dashboard summary...");
+
+    const response = await apiRequest("/analytics/dashboard/", { method: "GET" });
+    console.log("[API] Dashboard summary response status:", response.status);
+
+    const result = await response.json().catch(() => null);
+    console.log("[API] Dashboard summary response data:", result);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: {
+          code: response.status === 401 ? "UNAUTHORIZED" : "API_ERROR",
+          message: result?.error?.message || result?.message || result?.detail || `Failed to fetch dashboard (${response.status})`,
+          details: result,
+        },
+      };
+    }
+
+    if (result?.success && result?.data) {
+      return { success: true, data: result.data };
+    }
+
+    return {
+      success: false,
+      error: {
+        code: "INVALID_RESPONSE",
+        message: "Unexpected response format from server",
+        details: result,
+      },
+    };
+  } catch (error: any) {
+    console.error("Get dashboard summary error:", error);
+    const errorMessage = error?.message || "Unknown error";
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: `Failed to fetch dashboard: ${errorMessage}`,
+      },
+    };
+  }
+}
+
+export async function deleteBudget(year_month: string): Promise<ApiResponse<any>> {
+  try {
+    console.log("[API] Deleting budget:", year_month);
+
+    const response = await apiRequest(`/budgets/?year_month=${encodeURIComponent(year_month)}`, {
+      method: "DELETE",
+    });
+
+    console.log("[API] Delete budget response status:", response.status);
+
+    let result: any = null;
+    try {
+      const text = await response.text();
+      if (text && text.trim()) result = JSON.parse(text);
+    } catch {
+      result = null;
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: {
+          code: response.status === 401 ? "UNAUTHORIZED" : response.status === 404 ? "NOT_FOUND" : "API_ERROR",
+          message: result?.error?.message || result?.message || result?.detail || `Failed to delete budget (${response.status})`,
+          details: result,
+        },
+      };
+    }
+
+    return {
+      success: true,
+      data: result?.data ?? null,
+      message: result?.message || "Budget deleted successfully",
+    };
+  } catch (error: any) {
+    console.error("Delete budget error:", error);
+    const errorMessage = error?.message || "Unknown error";
+    return {
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: `Failed to delete budget: ${errorMessage}`,
+      },
+    };
+  }
 }
 
 /**

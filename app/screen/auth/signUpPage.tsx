@@ -111,12 +111,14 @@ export default function SignUpPage() {
         }
       } else {
         // Handle API errors
+        const maybeError: any = (response as any).error;
+        const details: any = maybeError?.details;
         const errorMessage =
-          response.error.details && Object.keys(response.error.details).length > 0
-            ? Object.values(response.error.details)
-                .flat()
-                .join(", ")
-            : response.error.message;
+          details && typeof details === "object" && Object.keys(details).length > 0
+            ? Object.values(details).flat().join(", ")
+            : maybeError?.message ||
+              (response as any)?.detail ||
+              "Registration failed. Please try again.";
         setError(errorMessage);
       }
     } catch (err) {

@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, StyleSheet, Pressable, Alert, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useRouter } from "expo-router";
@@ -6,12 +6,14 @@ import { Ionicons } from "@expo/vector-icons";
 import TextInputFull from "../../components/textInput/textInputFull";
 import ButtonHalf from "../../components/button/buttonHalf";
 import DropDown from "../../components/textInput/dropDown";
+import { createBudget } from "../../utils/api";
 
 export default function AddBudgetPage() {
   const router = useRouter();
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
   const [budgetAmount, setBudgetAmount] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleCancel = () => {
     // Navigate back to budgetPage
@@ -31,25 +33,60 @@ export default function AddBudgetPage() {
   };
 
   const handleAdd = async () => {
-    // TODO: Replace with backend API call
-    // const addBudget = async () => {
-    //   const response = await fetch('/api/budgets/', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({
-    //       month_year: `${selectedYear}.${selectedMonth}`,
-    //       amount: parseFloat(budgetAmount),
-    //     }),
-    //   });
-    //   const data = await response.json();
-    //   return data;
-    // };
+    if (!selectedMonth || !selectedYear) {
+      const msg = "Please select month and year";
+      if (Platform.OS === "web" && typeof window !== "undefined") window.alert(msg);
+      else Alert.alert("Error", msg);
+      return;
+    }
+    const amountNum = parseFloat(budgetAmount);
+    if (!budgetAmount || Number.isNaN(amountNum) || amountNum <= 0) {
+      const msg = "Please enter a valid budget amount";
+      if (Platform.OS === "web" && typeof window !== "undefined") window.alert(msg);
+      else Alert.alert("Error", msg);
+      return;
+    }
 
-    // Placeholder: Call backend API
-    // await addBudget();
+    const monthMap: Record<string, string> = {
+      Jan: "01",
+      Feb: "02",
+      Mar: "03",
+      Apr: "04",
+      May: "05",
+      Jun: "06",
+      Jul: "07",
+      Aug: "08",
+      Sep: "09",
+      Oct: "10",
+      Nov: "11",
+      Dec: "12",
+    };
+    const monthNum = monthMap[selectedMonth];
+    const yearMonth = `${selectedYear}-${monthNum}`;
 
-    // Navigate back to budgetPage after adding
-    router.push("/(tabs)/budget");
+    setLoading(true);
+    try {
+      const res = await createBudget({ amount: amountNum, year_month: yearMonth });
+      if (res.success) {
+        // clear form
+        setSelectedMonth("");
+        setSelectedYear("");
+        setBudgetAmount("");
+        // go back to list; list will refresh on focus
+        router.push("/(tabs)/budget");
+      } else {
+        const msg = "error" in res ? res.error.message : "Failed to create budget";
+        if (Platform.OS === "web" && typeof window !== "undefined") window.alert(msg);
+        else Alert.alert("Error", msg);
+      }
+    } catch (e) {
+      console.error("[AddBudget] create failed:", e);
+      const msg = "An error occurred while creating the budget";
+      if (Platform.OS === "web" && typeof window !== "undefined") window.alert(msg);
+      else Alert.alert("Error", msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -134,9 +171,10 @@ export default function AddBudgetPage() {
               }}
               button2={{
                 color: "#5E17EB",
-                text: "Add",
+                text: loading ? "Adding..." : "Add",
                 textColor: "#FFFFFF",
                 onPress: handleAdd,
+                disabled: loading,
               }}
             />
           </View>

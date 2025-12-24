@@ -1,11 +1,14 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Alert, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import ButtonSeventy from "@/components/button/buttonSeventy";
+import { useCallback, useState } from "react";
+import { getBudgets, BudgetListItem, deleteBudget } from "../../utils/api";
 
 interface Budget {
   id: string;
+  yearMonthKey: string; // YYYY-MM
   monthYear: string;
   budgetAmount: number;
   spentAmount: number;
@@ -21,20 +24,98 @@ export default function BudgetPage() {
   //   return data;
   // };
 
-  // Placeholder data - will be replaced with backend data
-  // Set to empty array to show empty state, or populate with data to show budgets
-  const budgets: Budget[] = [];
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleDelete = (id: string) => {
-    // TODO: Replace with backend API call
-    // const deleteBudget = async () => {
-    //   const response = await fetch(`/api/budgets/${id}/`, {
-    //     method: 'DELETE',
-    //   });
-    //   return response;
-    // };
-    // await deleteBudget();
-    console.log("Delete budget:", id);
+  const formatMonthYear = (yearMonth: string): string => {
+    // yearMonth: YYYY-MM
+    const [y, m] = yearMonth.split("-");
+    const monthNames: Record<string, string> = {
+      "01": "Jan",
+      "02": "Feb",
+      "03": "Mar",
+      "04": "Apr",
+      "05": "May",
+      "06": "Jun",
+      "07": "Jul",
+      "08": "Aug",
+      "09": "Sep",
+      "10": "Oct",
+      "11": "Nov",
+      "12": "Dec",
+    };
+    const mm = monthNames[m] || m;
+    return `${mm} ${y}`;
+  };
+
+  const fetchBudgets = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await getBudgets();
+      if (res.success && res.data) {
+        const mapped: Budget[] = (res.data as BudgetListItem[]).map((b) => ({
+          id: b.id.toString(),
+          yearMonthKey: b.year_month,
+          monthYear: formatMonthYear(b.year_month),
+          budgetAmount: Number(b.amount),
+          spentAmount: Number(b.spent),
+        }));
+        setBudgets(mapped);
+      } else {
+        setBudgets([]);
+      }
+    } catch (e) {
+      console.error("[BudgetPage] Failed to fetch budgets:", e);
+      setBudgets([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Refresh when page is focused (e.g., after adding a budget)
+  useFocusEffect(
+    useCallback(() => {
+      fetchBudgets();
+    }, [fetchBudgets])
+  );
+
+  const handleDelete = (budget: Budget) => {
+    const confirmAndDelete = async () => {
+      setLoading(true);
+      try {
+        const res = await deleteBudget(budget.yearMonthKey);
+        if (res.success) {
+          if (Platform.OS === "web" && typeof window !== "undefined") {
+            window.alert("This budget has been deleted");
+          } else {
+            Alert.alert("Success", "This budget has been deleted");
+          }
+          await fetchBudgets();
+        } else {
+          const msg = "error" in res ? res.error.message : "Failed to delete budget";
+          if (Platform.OS === "web" && typeof window !== "undefined") window.alert(msg);
+          else Alert.alert("Error", msg);
+        }
+      } catch (e) {
+        console.error("[BudgetPage] Delete failed:", e);
+        const msg = "An error occurred while deleting the budget";
+        if (Platform.OS === "web" && typeof window !== "undefined") window.alert(msg);
+        else Alert.alert("Error", msg);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      const ok = window.confirm("Delete this budget? This action cannot be undone.");
+      if (ok) void confirmAndDelete();
+      return;
+    }
+
+    Alert.alert("Delete Budget", "Delete this budget? This action cannot be undone.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: () => void confirmAndDelete() },
+    ]);
   };
 
   return (
@@ -55,7 +136,11 @@ export default function BudgetPage() {
         </View>
 
         {/* Budgets List or Empty State */}
-        {budgets.length === 0 ? (
+        {loading ? (
+          <View style={styles.emptyStateContainer}>
+            <ActivityIndicator size="large" color="#5E17EB" />
+          </View>
+        ) : budgets.length === 0 ? (
           <View style={styles.emptyStateContainer}>
             <View style={styles.emptyStateContent}>
               <Text style={styles.emptyStateTitle}>
@@ -92,7 +177,7 @@ export default function BudgetPage() {
                     </Text>
                     <Pressable
                       style={styles.deleteButton}
-                      onPress={() => handleDelete(budget.id)}
+                      onPress={() => handleDelete(budget)}
                     >
                       <Text style={styles.deleteText}>Delete</Text>
                     </Pressable>

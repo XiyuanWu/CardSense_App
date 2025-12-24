@@ -3,19 +3,33 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import ButtonFull from "@/components/button/buttonFull";
+import { useEffect, useState } from "react";
+import { checkAuth } from "@/utils/api";
 
 export default function AccountPage() {
   const router = useRouter();
 
-  // TODO: Replace with backend API call to get user name
-  // const fetchUserName = async () => {
-  //   const response = await fetch('/api/user/');
-  //   const data = await response.json();
-  //   return data.name;
-  // };
+  const [firstName, setFirstName] = useState<string>("");
 
-  // Placeholder - will be replaced with actual user name from account
-  const userName = "John";
+  useEffect(() => {
+    const loadUser = async () => {
+      const res = await checkAuth();
+      if (res.success) {
+        const user = res.data?.user;
+        const name =
+          (user?.first_name as string) ||
+          (user?.firstName as string) ||
+          (user?.username as string) ||
+          "";
+        setFirstName(name);
+      } else {
+        // not authenticated
+        setFirstName("");
+      }
+    };
+
+    loadUser();
+  }, []);
 
   const handleLogOut = () => {
     // TODO: Replace with backend API call
@@ -60,7 +74,9 @@ export default function AccountPage() {
         >
           {/* Welcome Message Card */}
           <View style={styles.welcomeCard}>
-            <Text style={styles.welcomeText}>Hello, {userName}!</Text>
+            <Text style={styles.welcomeText}>
+              Hello, {firstName || "there"}!
+            </Text>
             <Text style={styles.welcomeSubtext}>
               Thanks for choosing CardSense.
             </Text>
