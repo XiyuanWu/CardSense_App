@@ -32,15 +32,6 @@ export default function AccountPage() {
   }, []);
 
   const handleLogOut = () => {
-    // TODO: Replace with backend API call
-    // const logOut = async () => {
-    //   const response = await fetch('/api/auth/logout/', {
-    //     method: 'POST',
-    //   });
-    //   return response;
-    // };
-    // await logOut();
-    // console.log('Log out');
     router.push("/(auth)/welcome");
   };
 

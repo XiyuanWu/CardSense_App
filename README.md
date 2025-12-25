@@ -5,7 +5,9 @@
 
 ## Introduction
 
-Many Americans face numerous financial challenges under certain circumstances, particularly during the pandemic. A large group of cardholders can’t pay their credit card bill in one, resulting in them paying high interest fees. On the other hand, many cardholders may or may not be able to pay their bill in one, but those who use only a single or a very few number of cards miss out on potential rewards that would have been earned by using more suitable cards for specific categories, such as groceries, gas, and dining. Our web app addresses both problems separately and together: a budget tracker to reduce interest costs, and a card-rewards optimizer to help users earn more on ordinary spending.
+CardSense was initially a group project, and it's about a website that helps people manage their budgets and maximize credit card rewards by tracking their spending. After the group project is done. To expand my skill stack, I made a mobile version for CardSense. And the backend remained the same because they used the same backend.
+
+For project introduction, motivation, and complete information about the CardSense web version, refer to [here](https://github.com/XiyuanWu/CardSense_Web). 
 
 ## Figma
 
@@ -47,7 +49,7 @@ pip install django-cors-headers
 pip install django-multiselectfield
 pip install django-cors-headers
 ```
-**React**
+**React Native**
 
 ```
 # Switch to `app` folder
@@ -65,11 +67,11 @@ In order to run the website, you need **TWO terminal windows** running simultane
 ```bush
 npm start
 ```
-Website should live on http://localhost:3000/.
+Website should live on http://localhost:8081/.
 
 2. Open a new terminal, now run backend:
 
-use `cd ..` swtich to `Cardsense/` folder, then run backend
+use `cd ..` swtich to `Cardsense_App/` folder, then run backend
 
 **For Android Emulator or Physical Devices:**
 ```bash
@@ -84,8 +86,8 @@ python manage.py runserver
 **Important Notes**
 
 Common Mistake: Make sure you run commands from the correct directory:
-- Django commands: Run from `CardSense/` (project root)
-- React commands: Run from `CardSense/app/` (app folder)
+- Django commands: Run from `CardSense_App/` (project root)
+- React commands: Run from `CardSense_App/app/` (app folder)
 
 ## Project Structure
 
