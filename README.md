@@ -1,5 +1,11 @@
 # CardSense (App)
 
+![Next.js](https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![ReactNative](https://img.shields.io/badge/React_Native-FF4154?style=for-the-badge&logo=react&logoColor=white)
+![Django](https://img.shields.io/badge/django-1A2C34?style=for-the-badge&logo=django&logoColor=F7BA3E)
+![TypeScript](https://img.shields.io/badge/typescript-%23407ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
+![Figma](https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white)
+
 **Manage user's budgets and maximize credit card rewards by tracking spending**
 
 
